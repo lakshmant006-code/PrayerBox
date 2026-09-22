@@ -14,9 +14,18 @@
   <body>
     <div id="app">
       <header class="topbar">
-        <a class="box-link" href="/">Prayer Box</a>
         <div class="counters" id="counters">0 prayers · 0 answered</div>
       </header>
+
+      <div class="stage-wrap" aria-hidden="true">
+        <div class="stage">
+          <img class="layer-1" src="/images/1-prayer-box.png" alt="" />
+          <img class="layer-2" src="/images/2-opacity.png" alt="" />
+          <img class="layer-3" src="/images/3-title.png" alt="" />
+          <img class="layer-4" src="/images/4-letter.png" alt="" />
+        </div>
+      </div>
+      <h1 class="visually-hidden">Prayer Box</h1>
 
       <canvas id="pile"></canvas>
 

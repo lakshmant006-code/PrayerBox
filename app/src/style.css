@@ -108,16 +108,8 @@ body {
   flex: 0 0 auto;
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
-  padding: 16px clamp(16px, 4vw, 32px);
-}
-
-.box-link {
-  font-family: "Cormorant Garamond", serif;
-  font-weight: 600;
-  font-size: 24px;
-  color: var(--ink);
-  text-decoration: none;
+  justify-content: flex-end;
+  padding: 16px clamp(16px, 4vw, 32px) 0;
 }
 
 .counters {
@@ -126,6 +118,61 @@ body {
   letter-spacing: 0.04em;
   color: var(--meta);
   font-variant-numeric: tabular-nums;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* the four hand-drawn layers read as one paper card, always on their own
+   warm-white ground so the ink stays legible over night-vigil mode too */
+.stage-wrap {
+  flex: 0 1 auto;
+  min-height: 0;
+  display: flex;
+  justify-content: center;
+  padding-block: clamp(4px, 1.5vh, 16px);
+}
+
+.stage {
+  position: relative;
+  aspect-ratio: 1640 / 2360;
+  height: clamp(110px, 28vh, 280px);
+  width: auto;
+  max-width: 100%;
+  background: #fffdf8;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.stage img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.stage .layer-1 {
+  z-index: 1;
+}
+.stage .layer-2 {
+  z-index: 2;
+  mix-blend-mode: multiply;
+}
+.stage .layer-3 {
+  z-index: 3;
+  mix-blend-mode: multiply;
+}
+.stage .layer-4 {
+  z-index: 4;
+  mix-blend-mode: multiply;
 }
 
 #pile {
