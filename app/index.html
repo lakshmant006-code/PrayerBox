@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=EB+Garamond:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <title>Prayer Box</title>
+  </head>
+  <body>
+    <div id="app">
+      <header class="topbar">
+        <a class="box-link" href="/">Prayer Box</a>
+        <div class="counters" id="counters">0 prayers · 0 answered</div>
+      </header>
+
+      <canvas id="pile"></canvas>
+
+      <div class="compose">
+        <div
+          id="typingBox"
+          class="typing-box"
+          contenteditable="plaintext-only"
+          data-placeholder="Lay your prayer down…"
+          role="textbox"
+          aria-multiline="true"
+          aria-label="Write a prayer"
+        ></div>
+        <p class="hint" id="hint">Write a prayer and press Enter to release it.</p>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
