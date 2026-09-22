@@ -1,0 +1,266 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Prayer Box</title>
+<style>
+  body{
+    background:#ffffff;
+    padding-inline:16px;
+    margin:0;
+  }
+  .stage-wrap{
+    display:flex;
+    justify-content:center;
+    padding-block:40px;
+  }
+  .stage{
+    position:relative;
+    width:100%;
+    aspect-ratio:1640/2360;
+    background:#ffffff;
+  }
+  .stage img{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    display:block;
+  }
+  /* layer 1, Prayer box, sits at the base as-is */
+  .layer-1{ z-index:1; }
+  /* layers 2-4 are multiplied over layer 1 so the shared paper-white
+     background of each file doesn't blank out what's underneath it */
+  .layer-2{ z-index:2; mix-blend-mode:multiply; }
+  .layer-3{ z-index:3; mix-blend-mode:multiply; }
+  .layer-4{ z-index:4; mix-blend-mode:multiply; }
+
+  /* ---- write & drop ---- */
+  .drop{
+    max-width:520px;
+    margin-inline:auto;
+    padding-block:8px 28px;
+  }
+  .drop form{
+    display:flex;
+    gap:8px;
+  }
+  .drop input{
+    flex:1;
+    min-width:0;
+    border:none;
+    border-bottom:1.5px solid #111;
+    background:transparent;
+    font-family:inherit;
+    font-size:15px;
+    padding:8px 2px;
+  }
+  .drop input:focus{ outline:none; border-bottom-width:2px; }
+  .drop button{
+    border:1.5px solid #111;
+    background:#fff;
+    font-family:inherit;
+    font-size:13px;
+    padding:8px 16px;
+    cursor:pointer;
+  }
+  .drop button:active{ background:#111; color:#fff; }
+
+  /* ---- the pit the letters fall into ---- */
+  .ground{
+    position:relative;
+    width:100%;
+    height:clamp(260px, 46vw, 440px);
+    overflow:hidden;
+    border-top:1.5px solid #111;
+  }
+  .ground.static{
+    height:auto;
+    min-height:140px;
+    display:flex;
+    flex-wrap:wrap-reverse;
+    align-content:flex-start;
+    align-items:flex-end;
+    justify-content:flex-start;
+    gap:2px;
+    padding:14px 8px 0;
+  }
+  .entry{
+    width:64px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    pointer-events:none;
+  }
+  .ground:not(.static) .entry{
+    position:absolute;
+    left:0;
+    top:0;
+    will-change:transform;
+  }
+  .entry img{
+    width:40px;
+    height:40px;
+    display:block;
+    transform-origin:50% 50%;
+  }
+  .entry span{
+    display:block;
+    max-width:62px;
+    margin-top:2px;
+    font-size:10px;
+    line-height:1.2;
+    text-align:center;
+    color:#111;
+    overflow-wrap:anywhere;
+  }
+</style>
+
+<div class="stage-wrap">
+  <div class="stage">
+    <img class="layer-1" src="images/1-prayer-box.png" alt="Prayer box sketch">
+    <img class="layer-2" src="images/2-opacity.png" alt="Opacity layer">
+    <img class="layer-3" src="images/3-title.png" alt="Prayer Box title">
+    <img class="layer-4" src="images/4-letter.png" alt="Letter icon">
+  </div>
+</div>
+
+<div class="drop">
+  <form id="prayerForm">
+    <label for="prayerInput" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">Write your prayer</label>
+    <input id="prayerInput" type="text" maxlength="60" placeholder="write it down" autocomplete="off" required>
+    <button type="submit">Drop it in</button>
+  </form>
+</div>
+
+<div class="ground" id="ground"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+<script>
+(function(){
+  var STORAGE_KEY = 'prayer-box-entries';
+  var ground = document.getElementById('ground');
+  var form = document.getElementById('prayerForm');
+  var input = document.getElementById('prayerInput');
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function load(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    }catch(e){ return []; }
+  }
+  function save(list){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); }catch(e){}
+  }
+
+  function buildEntryEl(text){
+    var el = document.createElement('div');
+    el.className = 'entry';
+    var img = document.createElement('img');
+    img.src = 'images/letter-icon.png';
+    img.alt = 'a dropped-in note';
+    var span = document.createElement('span');
+    span.textContent = text;
+    el.appendChild(img);
+    el.appendChild(span);
+    return { el: el, img: img };
+  }
+
+  var stored = load();
+
+  if(reduceMotion || typeof Matter === 'undefined'){
+    // no motion (or Matter failed to load): drop entries in place, no simulation
+    ground.classList.add('static');
+    stored.forEach(function(text){ ground.appendChild(buildEntryEl(text).el); });
+
+    form.addEventListener('submit', function(e){
+      e.preventDefault();
+      var text = input.value.trim();
+      if(!text) return;
+      ground.appendChild(buildEntryEl(text).el);
+      stored.push(text);
+      save(stored);
+      input.value = '';
+      input.focus();
+    });
+    return;
+  }
+
+  // ---- gravity pit: each note is a tumbling body that falls, collides
+  // and settles on the pile, the way jars fall into a jar-app hero ----
+  var Engine = Matter.Engine, World = Matter.World, Bodies = Matter.Bodies,
+      Body = Matter.Body, Runner = Matter.Runner;
+
+  var engine = Engine.create();
+  var world = engine.world;
+  var ICON = 40, WALL = 80;
+  var bank = []; // { body, el, img }
+
+  var w = ground.clientWidth, h = ground.clientHeight;
+  var floor = Bodies.rectangle(w / 2, h + WALL / 2, w + WALL * 2, WALL, { isStatic: true, friction: 0.7 });
+  var leftWall = Bodies.rectangle(-WALL / 2, h / 2, WALL, h * 8, { isStatic: true });
+  var rightWall = Bodies.rectangle(w + WALL / 2, h / 2, WALL, h * 8, { isStatic: true });
+  World.add(world, [floor, leftWall, rightWall]);
+
+  var runner = Runner.create();
+  Runner.run(runner, engine);
+
+  window.addEventListener('resize', function(){
+    w = ground.clientWidth;
+    h = ground.clientHeight;
+    Body.setPosition(floor, { x: w / 2, y: h + WALL / 2 });
+    Body.setPosition(leftWall, { x: -WALL / 2, y: h / 2 });
+    Body.setPosition(rightWall, { x: w + WALL / 2, y: h / 2 });
+  });
+
+  function dropEntry(text){
+    var parts = buildEntryEl(text);
+    ground.appendChild(parts.el);
+
+    var margin = ICON / 2 + 4;
+    var span = Math.max(w - margin * 2, 1);
+    var x = margin + Math.random() * span;
+    var y = -ICON - Math.random() * 140;
+
+    var body = Bodies.rectangle(x, y, ICON, ICON, {
+      restitution: 0.22,
+      friction: 0.55,
+      frictionAir: 0.012,
+      density: 0.0016,
+      chamfer: { radius: 8 },
+      angle: Math.random() * 0.6 - 0.3
+    });
+    Body.setAngularVelocity(body, Math.random() * 0.3 - 0.15);
+    Body.setVelocity(body, { x: Math.random() * 1.2 - 0.6, y: 0 });
+    World.add(world, body);
+    bank.push({ body: body, el: parts.el, img: parts.img });
+  }
+
+  function sync(){
+    for(var i = 0; i < bank.length; i++){
+      var entry = bank[i];
+      var pos = entry.body.position;
+      entry.el.style.transform = 'translate(' + (pos.x - 32) + 'px,' + (pos.y - ICON / 2) + 'px)';
+      entry.img.style.transform = 'rotate(' + entry.body.angle + 'rad)';
+    }
+    requestAnimationFrame(sync);
+  }
+  requestAnimationFrame(sync);
+
+  // replay whatever was already dropped here before, falling back in one by one
+  stored.forEach(function(text, i){
+    setTimeout(function(){ dropEntry(text); }, i * 90);
+  });
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    var text = input.value.trim();
+    if(!text) return;
+    dropEntry(text);
+    stored.push(text);
+    save(stored);
+    input.value = '';
+    input.focus();
+  });
+})();
+</script>
+
+</body></html>
