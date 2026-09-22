@@ -1,20 +1,18 @@
 import Matter from "matter-js";
 
-const { Engine, World, Bodies, Body, Runner } = Matter;
+const { Engine, World, Bodies, Body, Runner, Sleeping } = Matter;
 
-export type LetterKind = "letter" | "ember";
-
-export interface LetterPlugin {
-  isLetter: true;
-  char: string;
-  charIndex: number;
+export interface PrayerPlugin {
+  isPrayer: true;
   prayerId: string;
-  kind: LetterKind;
-  /** set once a prayer is marked answered (step 5 of the build order) */
+  text: string;
+  /** set once a prayer is marked answered (a later step) */
   answered?: boolean;
 }
 
 const WALL = 300;
+export const ICON_WIDTH = 46;
+export const ICON_HEIGHT = 35; // matches the cropped letter-icon.png aspect ratio
 
 export class PrayerPhysics {
   engine: Matter.Engine;
@@ -26,7 +24,6 @@ export class PrayerPhysics {
   private floor?: Matter.Body;
   private leftWall?: Matter.Body;
   private rightWall?: Matter.Body;
-  private ceiling?: Matter.Body;
   private reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   constructor(container: HTMLElement) {
@@ -57,6 +54,8 @@ export class PrayerPhysics {
     this.width = w;
     this.height = h;
 
+    // floor + side walls only, no ceiling: notes drop in from above the
+    // visible area and should fall freely until they land
     const next = [
       Bodies.rectangle(w / 2, h + WALL / 2, w + WALL * 2, WALL, {
         isStatic: true,
@@ -64,51 +63,57 @@ export class PrayerPhysics {
       }),
       Bodies.rectangle(-WALL / 2, h / 2, WALL, h + WALL * 2, { isStatic: true }),
       Bodies.rectangle(w + WALL / 2, h / 2, WALL, h + WALL * 2, { isStatic: true }),
-      Bodies.rectangle(w / 2, -WALL / 2, w + WALL * 2, WALL, { isStatic: true }),
     ];
 
-    const old = [this.floor, this.leftWall, this.rightWall, this.ceiling].filter(
+    const old = [this.floor, this.leftWall, this.rightWall].filter(
       (b): b is Matter.Body => !!b,
     );
     if (old.length) World.remove(this.engine.world, old);
     World.add(this.engine.world, next);
-    [this.floor, this.leftWall, this.rightWall, this.ceiling] = next;
+    [this.floor, this.leftWall, this.rightWall] = next;
+
+    // sleeping bodies don't get re-integrated on their own, so a resize
+    // that moves the floor out from under an already-settled note would
+    // otherwise leave it floating; wake everything so it re-settles
+    for (const body of this.bodies()) {
+      Sleeping.set(body, false);
+    }
   }
 
-  /** Spawns one letter body just below the visible pile and gives it the
-   * "release" kick (spec 4.3): a soft upward toss instead of a drop. */
-  spawnLetter(char: string, x: number, width: number, charIndex: number, prayerId: string) {
-    const radius = (Math.max(width, 30) / 2) * 0.58;
-    const body = Bodies.circle(x, this.height + 20, radius, {
-      restitution: 0.2,
-      friction: 0.7,
-      frictionStatic: 0.9,
-      density: 0.002,
-      slop: 0.02,
+  /** Drops one whole prayer note in from above the pile, tumbling under
+   * gravity until it lands and settles (no upward "release" toss). */
+  spawnPrayer(text: string, prayerId: string) {
+    const margin = ICON_WIDTH / 2 + 4;
+    const span = Math.max(this.width - margin * 2, 1);
+    const x = margin + Math.random() * span;
+    const y = -ICON_HEIGHT - Math.random() * 140;
+
+    const body = Bodies.rectangle(x, y, ICON_WIDTH, ICON_HEIGHT, {
+      restitution: 0.22,
+      friction: 0.55,
+      frictionStatic: 0.8,
+      frictionAir: 0.012,
+      density: 0.0016,
+      chamfer: { radius: 6 },
+      angle: this.reduceMotion ? 0 : Math.random() * 0.6 - 0.3,
       plugin: {
-        isLetter: true,
-        char,
-        charIndex,
+        isPrayer: true,
         prayerId,
-        kind: "letter",
-      } satisfies LetterPlugin,
+        text,
+      } satisfies PrayerPlugin,
     });
     World.add(this.engine.world, body);
-    if (this.reduceMotion) {
-      Body.setVelocity(body, { x: 0, y: 0.2 });
-    } else {
-      Body.setVelocity(body, {
-        x: (Math.random() - 0.5) * 0.3,
-        y: -1.2 - Math.random() * 0.8,
-      });
-      Body.setAngularVelocity(body, (Math.random() - 0.5) * 0.08);
+
+    if (!this.reduceMotion) {
+      Body.setVelocity(body, { x: (Math.random() - 0.5) * 1.2, y: 0 });
+      Body.setAngularVelocity(body, (Math.random() - 0.5) * 0.3);
     }
     return body;
   }
 
   bodies(): Matter.Body[] {
     return Matter.Composite.allBodies(this.engine.world).filter(
-      (b) => (b.plugin as Partial<LetterPlugin> | undefined)?.isLetter,
+      (b) => (b.plugin as Partial<PrayerPlugin> | undefined)?.isPrayer,
     );
   }
 }

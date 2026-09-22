@@ -1,14 +1,23 @@
 import type { PrayerPhysics } from "./physics";
-import type { LetterPlugin } from "./physics";
+import type { PrayerPlugin } from "./physics";
+import { ICON_WIDTH, ICON_HEIGHT } from "./physics";
+
+const LABEL_MAX_CHARS = 60;
+
+function truncate(text: string): string {
+  return text.length > LABEL_MAX_CHARS ? text.slice(0, LABEL_MAX_CHARS - 1) + "…" : text;
+}
 
 export class PileRenderer {
   private canvas: HTMLCanvasElement;
   private physics: PrayerPhysics;
   private ctx: CanvasRenderingContext2D;
   private dpr = Math.max(1, window.devicePixelRatio || 1);
-  private inkLetters = "";
+  private ink = "";
   private gold = "";
   private goldGlow = "";
+  private icon: HTMLImageElement;
+  private iconReady = false;
 
   constructor(canvas: HTMLCanvasElement, physics: PrayerPhysics) {
     this.canvas = canvas;
@@ -16,6 +25,12 @@ export class PileRenderer {
     const ctx = canvas.getContext("2d");
     if (!ctx) throw new Error("2d canvas context unavailable");
     this.ctx = ctx;
+
+    this.icon = new Image();
+    this.icon.src = "/images/letter-icon.png";
+    this.icon.onload = () => {
+      this.iconReady = true;
+    };
 
     this.readTokens();
     window
@@ -32,7 +47,7 @@ export class PileRenderer {
 
   private readTokens() {
     const style = getComputedStyle(document.documentElement);
-    this.inkLetters = style.getPropertyValue("--ink-letters").trim();
+    this.ink = style.getPropertyValue("--ink-muted").trim();
     this.gold = style.getPropertyValue("--gold").trim();
     this.goldGlow = style.getPropertyValue("--gold-glow").trim();
   }
@@ -50,40 +65,38 @@ export class PileRenderer {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    ctx.font = '30px "Cormorant Garamond", serif';
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
+    if (this.iconReady) {
+      ctx.font = '11px system-ui, sans-serif';
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.shadowBlur = 0;
 
-    const bodies = this.physics.bodies();
-
-    // pass 1: plain ink letters, no shadow (cheap)
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = this.inkLetters;
-    for (const body of bodies) {
-      const plugin = body.plugin as LetterPlugin;
-      if (plugin.kind !== "letter" || plugin.answered) continue;
-      this.drawGlyph(plugin.char, body.position.x, body.position.y, body.angle);
-    }
-
-    // pass 2: answered letters, gold with a shared shadow setting
-    ctx.shadowBlur = 8;
-    ctx.shadowColor = this.goldGlow;
-    ctx.fillStyle = this.gold;
-    for (const body of bodies) {
-      const plugin = body.plugin as LetterPlugin;
-      if (plugin.kind !== "letter" || !plugin.answered) continue;
-      this.drawGlyph(plugin.char, body.position.x, body.position.y, body.angle);
+      for (const body of this.physics.bodies()) {
+        const plugin = body.plugin as PrayerPlugin;
+        this.drawNote(plugin, body.position.x, body.position.y, body.angle);
+      }
     }
 
     requestAnimationFrame(this.tick);
   };
 
-  private drawGlyph(char: string, x: number, y: number, angle: number) {
+  private drawNote(plugin: PrayerPlugin, x: number, y: number, angle: number) {
     const { ctx } = this;
+
+    // the icon itself tumbles with the physics body
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(angle);
-    ctx.fillText(char, 0, 0);
+    if (plugin.answered) {
+      ctx.shadowBlur = 8;
+      ctx.shadowColor = this.goldGlow;
+    }
+    ctx.drawImage(this.icon, -ICON_WIDTH / 2, -ICON_HEIGHT / 2, ICON_WIDTH, ICON_HEIGHT);
     ctx.restore();
+
+    // the label stays level underneath, regardless of the note's tilt
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = plugin.answered ? this.gold : this.ink;
+    ctx.fillText(truncate(plugin.text), x, y + ICON_HEIGHT / 2 + 4);
   }
 }

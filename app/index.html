@@ -30,16 +30,26 @@
       <canvas id="pile"></canvas>
 
       <div class="compose">
-        <div
-          id="typingBox"
-          class="typing-box"
-          contenteditable="plaintext-only"
-          data-placeholder="Lay your prayer down…"
-          role="textbox"
-          aria-multiline="true"
-          aria-label="Write a prayer"
-        ></div>
-        <p class="hint" id="hint">Write a prayer and press Enter to release it.</p>
+        <button type="button" id="createBtn" class="create-btn">
+          Create a new prayer request
+        </button>
+
+        <form id="prayerForm" class="prayer-form" hidden>
+          <div
+            id="typingBox"
+            class="typing-box"
+            contenteditable="plaintext-only"
+            data-placeholder="Lay your prayer down…"
+            role="textbox"
+            aria-multiline="true"
+            aria-label="Write a prayer"
+          ></div>
+          <div class="form-actions">
+            <button type="button" id="cancelBtn" class="cancel-btn">Cancel</button>
+            <button type="submit" class="release-btn">Drop it in</button>
+          </div>
+          <p class="hint">Press Enter to release it.</p>
+        </form>
       </div>
     </div>
     <script type="module" src="/src/main.ts"></script>
