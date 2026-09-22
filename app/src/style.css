@@ -85,13 +85,18 @@
   box-sizing: border-box;
 }
 
-html,
-body {
+html {
   height: 100%;
 }
 
 body {
   margin: 0;
+  width: 100%;
+  /* dvh tracks the real, visible viewport (mobile address/toolbar included),
+     so the page always fills the actual screen instead of leaving a gap
+     under browser chrome; vh is the fallback for older browsers */
+  height: 100vh;
+  height: 100dvh;
   background: var(--paper);
   color: var(--ink);
   font-family: "EB Garamond", Georgia, serif;
@@ -100,6 +105,7 @@ body {
 
 #app {
   height: 100%;
+  width: 100%;
   display: flex;
   flex-direction: column;
 }
