@@ -1,20 +1,28 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Prayer Box</title>
 <style>
+  html{ height:100%; }
   body{
     background:#ffffff;
     padding-inline:16px;
     margin:0;
+    height:100%;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
   }
   .stage-wrap{
+    flex:0 1 auto;
+    min-height:0;
     display:flex;
     justify-content:center;
-    padding-block:40px;
+    padding-block:clamp(6px, 2vh, 20px);
   }
   .stage{
     position:relative;
-    width:100%;
     aspect-ratio:1640/2360;
+    height:clamp(120px, 32vh, 320px);
+    width:auto;
+    max-width:100%;
     background:#ffffff;
   }
   .stage img{
@@ -34,9 +42,11 @@
 
   /* ---- write & drop ---- */
   .drop{
+    flex:0 0 auto;
     max-width:520px;
+    width:100%;
     margin-inline:auto;
-    padding-block:8px 28px;
+    padding-block:4px 12px;
   }
   .drop form{
     display:flex;
@@ -63,17 +73,17 @@
   }
   .drop button:active{ background:#111; color:#fff; }
 
-  /* ---- the pit the letters fall into ---- */
+  /* ---- the pit the letters fall into: fills whatever height is left ---- */
   .ground{
+    flex:1 1 auto;
+    min-height:0;
     position:relative;
     width:100%;
-    height:clamp(260px, 46vw, 440px);
     overflow:hidden;
     border-top:1.5px solid #111;
   }
   .ground.static{
-    height:auto;
-    min-height:140px;
+    overflow:auto;
     display:flex;
     flex-wrap:wrap-reverse;
     align-content:flex-start;
@@ -194,22 +204,36 @@
   var ICON = 40, WALL = 80;
   var bank = []; // { body, el, img }
 
-  var w = ground.clientWidth, h = ground.clientHeight;
-  var floor = Bodies.rectangle(w / 2, h + WALL / 2, w + WALL * 2, WALL, { isStatic: true, friction: 0.7 });
-  var leftWall = Bodies.rectangle(-WALL / 2, h / 2, WALL, h * 8, { isStatic: true });
-  var rightWall = Bodies.rectangle(w + WALL / 2, h / 2, WALL, h * 8, { isStatic: true });
-  World.add(world, [floor, leftWall, rightWall]);
+  var w = ground.clientWidth || 1, h = ground.clientHeight || 1;
+  var floor, leftWall, rightWall;
+
+  // the pit's own size settles with layout (flex, safe-area insets, fonts),
+  // not only on window resize, so rebuild the bounds directly off its
+  // measured size instead of trusting a single clientHeight read at load
+  function resizeBounds(){
+    var nw = ground.clientWidth, nh = ground.clientHeight;
+    if(!nw || !nh) return;
+    w = nw; h = nh;
+    var next = [
+      Bodies.rectangle(w / 2, h + WALL / 2, w + WALL * 2, WALL, { isStatic: true, friction: 0.7 }),
+      Bodies.rectangle(-WALL / 2, h / 2, WALL, h * 8 + WALL, { isStatic: true }),
+      Bodies.rectangle(w + WALL / 2, h / 2, WALL, h * 8 + WALL, { isStatic: true })
+    ];
+    var old = [floor, leftWall, rightWall].filter(Boolean);
+    if(old.length) World.remove(world, old);
+    World.add(world, next);
+    floor = next[0]; leftWall = next[1]; rightWall = next[2];
+  }
+  resizeBounds();
 
   var runner = Runner.create();
   Runner.run(runner, engine);
 
-  window.addEventListener('resize', function(){
-    w = ground.clientWidth;
-    h = ground.clientHeight;
-    Body.setPosition(floor, { x: w / 2, y: h + WALL / 2 });
-    Body.setPosition(leftWall, { x: -WALL / 2, y: h / 2 });
-    Body.setPosition(rightWall, { x: w + WALL / 2, y: h / 2 });
-  });
+  if(window.ResizeObserver){
+    new ResizeObserver(resizeBounds).observe(ground);
+  } else {
+    window.addEventListener('resize', resizeBounds);
+  }
 
   function dropEntry(text){
     var parts = buildEntryEl(text);
@@ -262,5 +286,3 @@
   });
 })();
 </script>
-
-</body></html>
