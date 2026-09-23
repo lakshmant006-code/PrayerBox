@@ -166,7 +166,9 @@
     probe.style.visibility = 'hidden';
     var area = probe.offsetWidth * probe.offsetHeight || 60 * 64;
     probe.remove();
-    var FILL = 0.8; // piles leave gaps; more than this spills off the top of the screen
+    // Tilted letters leave gaps, so a pile only packs about half the screen area; more than
+    // this would stack above the screen or squeeze letters into each other.
+    var FILL = 0.45;
     return Math.max(12, Math.floor((window.innerWidth * window.innerHeight) / area * FILL));
   }
 
@@ -184,7 +186,7 @@
       };
     }
 
-    var Engine = Matter.Engine, Runner = Matter.Runner, Bodies = Matter.Bodies,
+    var Engine = Matter.Engine, Bodies = Matter.Bodies,
         Composite = Matter.Composite, Mouse = Matter.Mouse, MouseConstraint = Matter.MouseConstraint,
         Events = Matter.Events, Body = Matter.Body;
 
@@ -192,9 +194,18 @@
     var items = Array.prototype.slice.call(box.children);
     box.classList.add('has-physics');
 
-    var engine = Engine.create();
+    // Extra solver passes keep a pile from pressing letters into each other.
+    var engine = Engine.create({ positionIterations: 16, velocityIterations: 10 });
+    box.engine = engine; // handy for checking the pile from the browser console
     engine.gravity.y = 1;
     var world = engine.world;
+
+    // The floor is the bottom of what's actually visible. On phones, browser toolbars can
+    // float over the bottom of the page, and letters would pile up hidden underneath them.
+    function visibleHeight() {
+      var h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      return Math.min(box.clientHeight, Math.round(h));
+    }
 
     var WALL = 200;
     var walls = [];
@@ -203,7 +214,7 @@
     var obstacles = document.querySelectorAll('.desktop > .frame > .drop-button');
     function buildWalls() {
       Composite.remove(world, walls);
-      var w = box.clientWidth, h = box.clientHeight, tall = h * 6;
+      var w = box.clientWidth, h = visibleHeight(), tall = h * 6;
       walls = [
         // Floor sits a few px above the edge so settling letters never poke below it.
         Bodies.rectangle(w / 2, h - 4 + WALL / 2, w + WALL * 2, WALL, { isStatic: true }),
@@ -227,12 +238,13 @@
     function addBody(el, y) {
       var w = el.offsetWidth, h = el.offsetHeight;
       var x = w / 2 + Math.random() * Math.max(1, box.clientWidth - w);
+      // Square corners, like the drawn letters, so corners can't slide into each other.
       var body = Bodies.rectangle(x, y, w, h, {
-        restitution: 0.35,
-        friction: 0.4,
-        frictionAir: 0.015,
+        restitution: 0.2,
+        friction: 0.6,
+        frictionAir: 0.02,
         density: 0.002,
-        chamfer: { radius: 6 },
+        slop: 0.01,
         angle: (Math.random() - 0.5) * 0.8
       });
       Body.setAngularVelocity(body, (Math.random() - 0.5) * 0.1);
@@ -293,16 +305,33 @@
       });
     });
 
-    Runner.run(Runner.create(), engine);
+    // Step the physics at a steady 60 times a second of real time. Stepping once per screen
+    // refresh would run twice as fast on 120 Hz phones and iPads, and the harder impacts
+    // push letters into each other.
+    var STEP = 1000 / 60;
+    var pending = 0, last = performance.now();
+    function tick(now) {
+      pending += Math.min(now - last, 100); // after a pause (e.g. a hidden tab), don't race to catch up
+      last = now;
+      var steps = 0;
+      while (pending >= STEP && steps < 4) {
+        Engine.update(engine, STEP);
+        pending -= STEP;
+        steps++;
+      }
+      if (steps === 4) pending = 0;
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
 
     // Keep the walls on the box's edges when it changes size (window resize, rotating a
     // phone or tablet), and pull back any letter left outside them.
     var resizeTimer;
-    var lastWidth = box.clientWidth, lastHeight = box.clientHeight;
-    new ResizeObserver(function () {
-      if (box.clientWidth === lastWidth && box.clientHeight === lastHeight) return;
+    var lastWidth = box.clientWidth, lastHeight = visibleHeight();
+    function onResize() {
+      if (box.clientWidth === lastWidth && visibleHeight() === lastHeight) return;
       lastWidth = box.clientWidth;
-      lastHeight = box.clientHeight;
+      lastHeight = visibleHeight();
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(function () {
         buildWalls();
@@ -311,7 +340,10 @@
           if (x !== l.body.position.x) Body.setPosition(l.body, { x: x, y: -l.h });
         });
       }, 100);
-    }).observe(box);
+    }
+    new ResizeObserver(onResize).observe(box);
+    // Phone toolbars showing or hiding change the visible height without resizing the box.
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', onResize);
 
     return {
       // A new letter drops in from above the screen.
