@@ -98,6 +98,11 @@
   z-index: 1;
 }
 
+/* The title stays readable on top, but taps go through it to the letters underneath. */
+.desktop > .frame > .div {
+  pointer-events: none;
+}
+
 .letters.has-physics.is-dragging {
   cursor: grabbing;
 }
@@ -409,5 +414,14 @@
   .reply-as span {
     padding: 8px 6px;
     font-size: 13px;
+  }
+
+  .reply-text,
+  .reply-name {
+    font-size: 16px;
+  }
+
+  .reply-send {
+    min-height: 44px;
   }
 }

@@ -198,8 +198,9 @@
 
     var WALL = 200;
     var walls = [];
-    // The title and the button are solid, so letters pile around them instead of covering them.
-    var obstacles = document.querySelectorAll('.desktop > .frame > .div, .desktop > .frame > .drop-button');
+    // Only the "Drop your prayer" button is solid, so letters pile around it and never cover it.
+    // Letters can fall over everything else, including the title.
+    var obstacles = document.querySelectorAll('.desktop > .frame > .drop-button');
     function buildWalls() {
       Composite.remove(world, walls);
       var w = box.clientWidth, h = box.clientHeight, tall = h * 6;

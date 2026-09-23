@@ -12,6 +12,7 @@ var PrayerAuth = (function () {
   }
 
   var DEMO_KEY = 'signedInEmail';
+  var RETURN_KEY = 'afterGoogleSignIn';
 
   function demoSignIn(email) {
     try { sessionStorage.setItem(DEMO_KEY, email || 'demo@prayerbox'); } catch (e) {}
@@ -71,9 +72,33 @@ var PrayerAuth = (function () {
     },
 
     // Must be called straight from a click, or the browser blocks the Google pop-up.
-    google: function () {
+    // Where pop-ups can't open (some phone browsers and in-app browsers), it switches to a
+    // full-page redirect and comes back to `returnTo` afterwards (see finishRedirect).
+    google: function (returnTo) {
       if (demo) return demoSignIn('');
-      return requireAuth() || auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+      if (!auth) return requireAuth();
+      var provider = new firebase.auth.GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      return auth.signInWithPopup(provider).catch(function (err) {
+        var popupFailed = err && (err.code === 'auth/popup-blocked' ||
+          err.code === 'auth/operation-not-supported-in-this-environment');
+        if (!popupFailed) throw err;
+        try { sessionStorage.setItem(RETURN_KEY, returnTo || location.pathname); } catch (e) {}
+        return auth.signInWithRedirect(provider).then(function () {
+          return new Promise(function () {}); // the page is leaving for Google
+        });
+      });
+    },
+
+    // After a redirect sign-in, resolves with where to go next (or null if there was none).
+    finishRedirect: function () {
+      var returnTo = null;
+      try { returnTo = sessionStorage.getItem(RETURN_KEY); } catch (e) {}
+      if (!returnTo || !auth) return Promise.resolve(null);
+      try { sessionStorage.removeItem(RETURN_KEY); } catch (e) {}
+      return auth.getRedirectResult().then(function (result) {
+        return result && result.user ? returnTo : null;
+      }, function () { return null; });
     },
 
     logOut: function () {

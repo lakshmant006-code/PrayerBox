@@ -53,3 +53,10 @@
   width: 214px;
   height: auto;
 }
+
+/* Phones: a smaller "Drop your prayer" button */
+@media (max-width: 600px) {
+  .frame .img {
+    width: 160px;
+  }
+}

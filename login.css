@@ -137,12 +137,49 @@
   outline-offset: 2px;
 }
 
-@media (max-width: 420px) {
+/* Phones and tablets: roomier tap targets, and the box stays usable above the keyboard. */
+@media (pointer: coarse), (max-width: 1024px) {
+  .login {
+    max-height: calc(100dvh - 24px);
+  }
+
+  .login-btn {
+    min-height: 44px;
+  }
+
+  .login-close {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* Phones: full-width buttons, Google first. */
+@media (max-width: 600px) {
+  .login {
+    width: calc(100vw - 24px);
+    border-radius: 20px;
+  }
+
   .login-form {
-    padding: 24px 20px 20px;
+    padding: 22px 20px 20px;
+  }
+
+  .login-subtitle {
+    margin: 16px 0 20px;
+  }
+
+  .login-actions {
+    flex-direction: column;
+    align-items: stretch;
+    margin-top: 24px;
   }
 
   .login-actions .login-btn {
-    flex: 1 1 auto;
+    width: 100%;
+    padding: 12px 14px;
+  }
+
+  .login-actions [data-action="google"] {
+    order: -1;
   }
 }

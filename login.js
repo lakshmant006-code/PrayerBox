@@ -68,13 +68,16 @@
   });
 
   dialog.querySelector('[data-action="google"]').addEventListener('click', function () {
-    attempt(PrayerAuth.google());
+    attempt(PrayerAuth.google(next));
   });
 
   dialog.querySelector('.login-close').addEventListener('click', function () { dialog.close(); });
-  // Clicking outside the box closes it.
+  // Clicking outside the box closes it (a tap on the box's own padding doesn't).
   dialog.addEventListener('click', function (e) {
-    if (e.target === dialog) dialog.close();
+    if (e.target !== dialog) return;
+    var r = dialog.getBoundingClientRect();
+    var inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+    if (!inside) dialog.close();
   });
   dialog.addEventListener('close', function () {
     form.reset();
@@ -82,9 +85,13 @@
     setBusy(false);
   });
 
+  // On phones and tablets, don't jump straight into the email box: that pops up the
+  // keyboard and hides the Google button.
+  var touchScreen = window.matchMedia('(pointer: coarse)').matches;
+
   function openLogin() {
     dialog.showModal();
-    email.focus();
+    if (!touchScreen) email.focus();
   }
 
   document.querySelectorAll('a.drop-button').forEach(function (link) {
@@ -100,6 +107,11 @@
 
   // The prayer page sends signed-out visitors here with ?login to sign in first.
   if (new URLSearchParams(location.search).has('login')) openLogin();
+
+  // Coming back from a Google redirect sign-in: carry on to where the person was headed.
+  PrayerAuth.finishRedirect().then(function (returnTo) {
+    if (returnTo) location.href = returnTo;
+  });
 
   // Lets other parts of the page ask for a sign-in, then come back to `returnTo`.
   window.PrayerLogin = {
