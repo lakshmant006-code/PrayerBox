@@ -113,6 +113,21 @@
     if (returnTo) location.href = returnTo;
   });
 
+  // Signed-in visitors get a Log out button in the corner of the page.
+  var logOutButton = document.createElement('button');
+  logOutButton.type = 'button';
+  logOutButton.className = 'corner-log-out';
+  logOutButton.textContent = 'Log out';
+  logOutButton.hidden = true;
+  logOutButton.addEventListener('click', function () {
+    logOutButton.disabled = true;
+    PrayerAuth.logOutAndGoHome();
+  });
+  document.body.appendChild(logOutButton);
+  PrayerAuth.currentUser().then(function (user) {
+    logOutButton.hidden = !user;
+  });
+
   // Lets other parts of the page ask for a sign-in, then come back to `returnTo`.
   window.PrayerLogin = {
     open: function (returnTo) {

@@ -74,7 +74,7 @@
     if (!name.value && user.displayName) name.value = user.displayName.split(' ')[0];
   });
   document.getElementById('log-out').addEventListener('click', function () {
-    PrayerAuth.logOut().then(function () { location.href = 'index.html'; });
+    PrayerAuth.logOutAndGoHome();
   });
 
   // Save the prayer to the shared box, then go home to watch it drop in.

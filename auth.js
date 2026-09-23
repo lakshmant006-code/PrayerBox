@@ -109,6 +109,13 @@ var PrayerAuth = (function () {
       return auth ? auth.signOut() : Promise.resolve();
     },
 
+    // Every "Log out" button uses this: sign out, then land on the home page. It replaces
+    // the current page in history, so Back can't return to a page that needs sign-in.
+    logOutAndGoHome: function () {
+      var goHome = function () { location.replace('/'); };
+      return this.logOut().then(goHome, goHome);
+    },
+
     errorMessage: function (err) {
       return MESSAGES[err && err.code] || 'Something went wrong signing in. Please try again.';
     }

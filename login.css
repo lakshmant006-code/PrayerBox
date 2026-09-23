@@ -183,3 +183,38 @@
     order: -1;
   }
 }
+
+/* Log out, top-right corner of the home page (clear of the phone's notch and status bar) */
+.corner-log-out {
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top));
+  right: max(12px, env(safe-area-inset-right));
+  z-index: 2;
+  min-height: 36px;
+  padding: 6px 14px;
+  border: 1px solid #d9d7cf;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 14px;
+  color: #1a1a1a;
+}
+
+.corner-log-out:hover {
+  border-color: #1a1a1a;
+}
+
+.corner-log-out:focus-visible {
+  outline: 2px solid #1a1a1a;
+  outline-offset: 2px;
+}
+
+.corner-log-out[hidden] {
+  display: none;
+}
+
+@media (pointer: coarse) {
+  .corner-log-out {
+    min-height: 44px;
+  }
+}
