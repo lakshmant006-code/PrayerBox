@@ -254,13 +254,18 @@
     mouse.element.removeEventListener('wheel', mouse.mousewheel);
     mouse.element.removeEventListener('mousewheel', mouse.mousewheel);
     mouse.element.removeEventListener('DOMMouseScroll', mouse.mousewheel);
-    // Matter only hears a release inside the box; let go of the letter anywhere.
-    window.addEventListener('mouseup', mouse.mouseup);
-    window.addEventListener('touchend', mouse.mouseup);
     var drag = MouseConstraint.create(engine, {
       mouse: mouse,
       constraint: { stiffness: 0.2, render: { visible: false } }
     });
+    // Matter only hears a release inside the box; let go of a dragged letter anywhere.
+    // Only pass the release on while a letter is held: Matter cancels touch releases,
+    // and on phones that would stop taps from clicking buttons anywhere on the page.
+    function releaseOutside(e) {
+      if (drag.body && !box.contains(e.target)) mouse.mouseup(e);
+    }
+    window.addEventListener('mouseup', releaseOutside);
+    window.addEventListener('touchend', releaseOutside);
     Composite.add(world, drag);
     Events.on(drag, 'startdrag', function () { box.classList.add('is-dragging'); });
     Events.on(drag, 'enddrag', function () { box.classList.remove('is-dragging'); });
