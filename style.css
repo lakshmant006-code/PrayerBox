@@ -1,0 +1,55 @@
+.desktop {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+}
+
+.frame {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 40px;
+}
+
+.frame .div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.frame .letter {
+  width: 62px;
+  height: auto;
+}
+
+.frame .title {
+  width: 143px;
+  height: auto;
+}
+
+.drop-button {
+  border-radius: 12px;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.drop-button:hover {
+  transform: translateY(-2px);
+}
+
+.drop-button:active {
+  transform: translateY(0);
+  opacity: 0.85;
+}
+
+.drop-button:focus-visible {
+  outline: 3px solid #000;
+  outline-offset: 4px;
+}
+
+.frame .img {
+  width: 214px;
+  height: auto;
+}

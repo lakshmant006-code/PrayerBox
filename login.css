@@ -1,0 +1,148 @@
+.login {
+  width: min(480px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  padding: 0;
+  border: 0;
+  border-radius: 24px;
+  background: #f8f7f2;
+  color: #1a1a1a;
+  font-family: Georgia, "Times New Roman", serif;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+  overflow-y: auto;
+}
+
+.login::backdrop {
+  background: rgba(40, 40, 36, 0.3);
+}
+
+.login[open] {
+  animation: login-open 0.2s ease-out;
+}
+
+@keyframes login-open {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login[open] {
+    animation: none;
+  }
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  padding: 28px 32px 20px;
+}
+
+.login-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.login-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: normal;
+}
+
+.login-close {
+  width: 36px;
+  height: 36px;
+  margin-right: -8px;
+  border-radius: 50%;
+  font-size: 22px;
+  line-height: 1;
+  color: #1a1a1a;
+}
+
+.login-close:hover {
+  background: #ecebe4;
+}
+
+.login-subtitle {
+  margin: 28px 0 24px;
+  font-size: 14px;
+  color: #5c5a55;
+}
+
+.login-label {
+  margin-bottom: 8px;
+  font-size: 15px;
+}
+
+.login-input {
+  width: 100%;
+  margin-bottom: 18px;
+  padding: 10px 14px;
+  border: 1px solid #d9d7cf;
+  border-radius: 12px;
+  background: #fff;
+  font: inherit;
+  font-size: 16px;
+  color: #1a1a1a;
+}
+
+.login-input:focus {
+  outline: none;
+  border-color: #1a1a1a;
+  box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.12);
+}
+
+.login-error {
+  margin: -6px 0 0;
+  font-size: 14px;
+  color: #b3261e;
+}
+
+.login-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 40px;
+}
+
+.login-btn {
+  padding: 10px 14px;
+  border: 1px solid #d9d7cf;
+  border-radius: 12px;
+  background: #fff;
+  font-size: 16px;
+  color: #1a1a1a;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.login-btn:hover {
+  border-color: #1a1a1a;
+}
+
+.login-btn-primary {
+  border-color: #1a1a1a;
+  background: #1a1a1a;
+  color: #fff;
+}
+
+.login-btn-primary:hover {
+  background: #000;
+}
+
+.login-btn:focus-visible,
+.login-close:focus-visible {
+  outline: 2px solid #1a1a1a;
+  outline-offset: 2px;
+}
+
+@media (max-width: 420px) {
+  .login-form {
+    padding: 24px 20px 20px;
+  }
+
+  .login-actions .login-btn {
+    flex: 1 1 auto;
+  }
+}

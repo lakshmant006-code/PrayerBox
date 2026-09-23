@@ -1,0 +1,185 @@
+/* The box page keeps the home header at the top and gives the rest of the
+   screen to the letter pile. */
+.desktop {
+  align-items: stretch;
+  padding-right: 0;
+  padding-bottom: 0;
+  padding-left: 0;
+}
+
+.desktop > .frame {
+  width: 100%;
+  margin: 0 auto;
+  min-height: calc(100vh - 24px);
+  gap: 32px;
+}
+
+.letters {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-content: flex-start;
+  gap: 20px 28px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.letter-named {
+  width: 72px;
+  user-select: none;
+}
+
+.letter-open {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  color: inherit;
+  border-radius: 6px;
+}
+
+.letter-open:focus-visible {
+  outline: 2px solid #000;
+  outline-offset: 3px;
+}
+
+.letters:not(.has-physics) {
+  padding: 0 16px 32px;
+}
+
+/* Static layout (no physics): tilt each letter a little so it feels hand-dropped */
+.letters:not(.has-physics) .letter-named:nth-child(4n + 1) { transform: rotate(-6deg); }
+.letters:not(.has-physics) .letter-named:nth-child(4n + 2) { transform: rotate(4deg); }
+.letters:not(.has-physics) .letter-named:nth-child(4n + 3) { transform: rotate(-2deg); }
+.letters:not(.has-physics) .letter-named:nth-child(4n + 4) { transform: rotate(7deg); }
+
+/* Physics layout: the list becomes the box the letters fall into */
+.letters.has-physics {
+  position: relative;
+  display: block;
+  flex: 1;
+  min-height: 300px;
+  border-bottom: 2px solid #000;
+  cursor: grab;
+  touch-action: none;
+  overflow-x: clip;
+}
+
+.letters.has-physics.is-dragging {
+  cursor: grabbing;
+}
+
+.letters.has-physics .letter-named {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  will-change: transform;
+  transform: translateY(-9999px);
+}
+
+.letter-img {
+  width: 50px;
+  height: auto;
+}
+
+.letter-named .text-wrapper {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 13px;
+}
+
+/* The opened letter */
+.note {
+  width: min(420px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  padding: 36px 28px 28px;
+  border: 2px solid #000;
+  border-radius: 12px;
+  background: #fff;
+  color: #000;
+  font-family: Georgia, "Times New Roman", serif;
+  overflow-y: auto;
+}
+
+.note::backdrop {
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.note[open] {
+  animation: note-open 0.2s ease-out;
+}
+
+@keyframes note-open {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .note[open] {
+    animation: none;
+  }
+}
+
+.note-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 26px;
+  line-height: 1;
+  color: #000;
+}
+
+.note-close:hover {
+  background: #f0f0f0;
+}
+
+.note-close:focus-visible {
+  outline: 2px solid #000;
+}
+
+.note-label {
+  margin: 0 0 6px;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: #555;
+}
+
+.note-name {
+  margin: 0 0 18px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #000;
+  font-size: 24px;
+  font-weight: normal;
+}
+
+.note-request {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.note-date {
+  margin: 18px 0 0;
+  font-size: 13px;
+  color: #666;
+}
+
+.note-date:empty {
+  display: none;
+}

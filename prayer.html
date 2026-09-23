@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta charset="utf-8" />
+<title>Prayer Box · Request</title>
+<link rel="stylesheet" href="globals.css">
+<link rel="stylesheet" href="prayer.css">
+</head>
+<body>
+<main class="prayer-request-form">
+  <form class="submission-card" id="prayer-form">
+    <div class="form-fields">
+      <div class="div">
+        <label class="text-wrapper" for="name">YOUR NAME</label>
+        <div class="input-line-container">
+          <input class="text-wrapper-2" id="name" name="name" type="text" placeholder="Lakshman" autocomplete="given-name" />
+        </div>
+      </div>
+
+      <div class="div">
+        <label class="text-wrapper" for="request">PRAYER REQUEST</label>
+        <div class="textarea-frame">
+          <textarea class="p" id="request" name="request" rows="5" required
+            placeholder="Please pray for my grandmother who is undergoing surgery tomorrow morning. Praying for peace for our family and a swift, steady recovery."></textarea>
+        </div>
+      </div>
+
+      <fieldset class="div">
+        <legend class="text-wrapper">VISIBILITY SETTING</legend>
+        <div class="toggle-track">
+          <label class="option-left">
+            <input type="radio" name="visibility" value="anonymous" checked />
+            <span class="frame">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+              <span class="text-wrapper-3">Anonymous Request</span>
+            </span>
+          </label>
+          <label class="option-right">
+            <input type="radio" name="visibility" value="public" />
+            <span class="frame">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
+              <span class="text-wrapper-4">Public Request</span>
+            </span>
+          </label>
+        </div>
+      </fieldset>
+    </div>
+
+    <div class="form-actions">
+      <button class="submit-button" type="submit">
+        <span class="text-wrapper-5">Submit Prayer Request</span>
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </button>
+    </div>
+  </form>
+  <a class="back-link" href="index.html">← Back</a>
+</main>
+<script>
+  // No backend yet: prayers are kept in this browser, and never put in the URL.
+  document.getElementById('prayer-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var data = new FormData(this);
+    var anonymous = data.get('visibility') === 'anonymous';
+    var name = String(data.get('name') || '').trim();
+    var prayer = {
+      name: anonymous || !name ? 'Anonymous' : name,
+      request: String(data.get('request')).trim(),
+      visibility: data.get('visibility'),
+      createdAt: new Date().toISOString()
+    };
+    try {
+      var prayers = JSON.parse(localStorage.getItem('prayers') || '[]');
+      prayers.push(prayer);
+      localStorage.setItem('prayers', JSON.stringify(prayers));
+    } catch (err) {}
+    location.href = 'box.html';
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta charset="utf-8" />
+<title>Prayer Box · Prayers</title>
+<link rel="stylesheet" href="globals.css">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="login.css">
+<link rel="stylesheet" href="box.css">
+</head>
+<body>
+<main class="desktop">
+  <div class="frame">
+    <div class="div">
+      <img class="letter" src="img/letter-1.png" alt="" />
+      <h1><img class="title" src="img/title-1.png" alt="Prayer Box" /></h1>
+    </div>
+    <a class="drop-button" href="prayer.html">
+      <img class="img" src="img/frame-9.png" alt="Drop your prayer" />
+    </a>
+    <ul class="letters" id="letters" aria-label="Prayers in the box"></ul>
+  </div>
+</main>
+<template id="letter-template">
+  <li class="letter-named">
+    <button class="letter-open" type="button">
+      <img class="letter-img" src="img/letter-1.png" alt="" draggable="false" />
+      <span class="text-wrapper"></span>
+    </button>
+  </li>
+</template>
+
+<dialog class="note" id="note" aria-labelledby="note-name">
+  <button class="note-close" type="button" aria-label="Close">&times;</button>
+  <p class="note-label">PRAYER REQUEST FROM</p>
+  <h2 class="note-name" id="note-name"></h2>
+  <p class="note-request" id="note-request"></p>
+  <p class="note-date" id="note-date"></p>
+</dialog>
+
+<script>
+  // Placeholder letters from the design, shown until real prayers exist.
+  var SAMPLE_REQUEST = 'Please pray for my grandmother who is undergoing surgery tomorrow morning. ' +
+    'Praying for peace for our family and a swift, steady recovery.';
+  var PLACEHOLDERS = [1, 2, 3, 4, 5, 6, 7].map(function () {
+    return { name: 'Lakshman', request: SAMPLE_REQUEST };
+  });
+
+  var prayers = [];
+  try {
+    prayers = JSON.parse(localStorage.getItem('prayers') || '[]');
+  } catch (e) {}
+
+  var entries = prayers.length ? prayers.slice().reverse() : PLACEHOLDERS;
+
+  var note = document.getElementById('note');
+  function openNote(prayer) {
+    document.getElementById('note-name').textContent = prayer.name;
+    document.getElementById('note-request').textContent = prayer.request;
+    document.getElementById('note-date').textContent = prayer.createdAt
+      ? new Date(prayer.createdAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })
+      : '';
+    note.showModal();
+  }
+  note.querySelector('.note-close').addEventListener('click', function () { note.close(); });
+  // Clicking the dimmed backdrop (outside the note) closes it too.
+  note.addEventListener('click', function (e) {
+    if (e.target === note) note.close();
+  });
+
+  var list = document.getElementById('letters');
+  var template = document.getElementById('letter-template');
+  entries.forEach(function (prayer) {
+    var item = template.content.firstElementChild.cloneNode(true);
+    var button = item.querySelector('.letter-open');
+    item.querySelector('.text-wrapper').textContent = prayer.name;
+    button.setAttribute('aria-label', 'Read prayer from ' + prayer.name);
+    // Keyboard, and mouse when gravity is off. With gravity on, taps are picked up below.
+    button.addEventListener('click', function () { openNote(prayer); });
+    item.prayer = prayer;
+    list.appendChild(item);
+  });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+<script>
+  // Gravity: letters fall into the box and pile up; drag to toss them around.
+  // Without Matter.js, or with reduced motion on, the letters stay in the static layout.
+  function startGravity() {
+    var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!window.Matter || reduceMotion) return;
+
+    var Engine = Matter.Engine, Runner = Matter.Runner, Bodies = Matter.Bodies,
+        Composite = Matter.Composite, Mouse = Matter.Mouse, MouseConstraint = Matter.MouseConstraint,
+        Events = Matter.Events, Body = Matter.Body;
+
+    var box = document.getElementById('letters');
+    var items = Array.prototype.slice.call(box.children);
+    box.classList.add('has-physics');
+
+    var engine = Engine.create();
+    engine.gravity.y = 1;
+    var world = engine.world;
+
+    var WALL = 200;
+    var walls = [];
+    function buildWalls() {
+      Composite.remove(world, walls);
+      var w = box.clientWidth, h = box.clientHeight, tall = h * 6;
+      walls = [
+        // Floor sits a few px above the edge so settling letters never poke below it.
+        Bodies.rectangle(w / 2, h - 4 + WALL / 2, w + WALL * 2, WALL, { isStatic: true }),
+        Bodies.rectangle(-WALL / 2, h - tall / 2, WALL, tall, { isStatic: true }),
+        Bodies.rectangle(w + WALL / 2, h - tall / 2, WALL, tall, { isStatic: true })
+      ];
+      Composite.add(world, walls);
+    }
+    buildWalls();
+
+    // Oldest first, so the newest prayer lands on top of the pile.
+    var letters = items.slice().reverse().map(function (el, i) {
+      var w = el.offsetWidth, h = el.offsetHeight;
+      var x = w / 2 + Math.random() * Math.max(1, box.clientWidth - w);
+      var y = -h - i * (h * 0.9);
+      var body = Bodies.rectangle(x, y, w, h, {
+        restitution: 0.35,
+        friction: 0.4,
+        frictionAir: 0.015,
+        density: 0.002,
+        chamfer: { radius: 6 },
+        angle: (Math.random() - 0.5) * 0.8
+      });
+      Body.setAngularVelocity(body, (Math.random() - 0.5) * 0.1);
+      Composite.add(world, body);
+      return { el: el, body: body, w: w, h: h };
+    });
+
+    var mouse = Mouse.create(box);
+    // Let the page keep scrolling with the wheel.
+    mouse.element.removeEventListener('wheel', mouse.mousewheel);
+    mouse.element.removeEventListener('mousewheel', mouse.mousewheel);
+    mouse.element.removeEventListener('DOMMouseScroll', mouse.mousewheel);
+    // Matter only hears a release inside the box; let go of the letter anywhere.
+    window.addEventListener('mouseup', mouse.mouseup);
+    window.addEventListener('touchend', mouse.mouseup);
+    var drag = MouseConstraint.create(engine, {
+      mouse: mouse,
+      constraint: { stiffness: 0.2, render: { visible: false } }
+    });
+    Composite.add(world, drag);
+    Events.on(drag, 'startdrag', function () { box.classList.add('is-dragging'); });
+
+    // A quick tap on a letter (not a drag) opens its prayer.
+    var press = null;
+    Events.on(drag, 'mousedown', function () {
+      var hit = Matter.Query.point(letters.map(function (l) { return l.body; }), mouse.position)[0];
+      press = hit && { body: hit, x: mouse.position.x, y: mouse.position.y, t: Date.now() };
+    });
+    Events.on(drag, 'mouseup', function () {
+      if (!press) return;
+      var moved = Math.hypot(mouse.position.x - press.x, mouse.position.y - press.y);
+      var quick = Date.now() - press.t < 400;
+      var letter = letters.find(function (l) { return l.body === press.body; });
+      press = null;
+      if (moved < 8 && quick && letter) openNote(letter.el.prayer);
+    });
+    Events.on(drag, 'enddrag', function () { box.classList.remove('is-dragging'); });
+
+    Events.on(engine, 'afterUpdate', function () {
+      letters.forEach(function (l) {
+        var p = l.body.position;
+        l.el.style.transform =
+          'translate(' + (p.x - l.w / 2) + 'px,' + (p.y - l.h / 2) + 'px) rotate(' + l.body.angle + 'rad)';
+      });
+    });
+
+    Runner.run(Runner.create(), engine);
+
+    // Keep the walls on the box's edges when it changes size (window resize,
+    // a scrollbar appearing), and pull back any letter left outside them.
+    var resizeTimer;
+    var lastWidth = box.clientWidth, lastHeight = box.clientHeight;
+    new ResizeObserver(function () {
+      if (box.clientWidth === lastWidth && box.clientHeight === lastHeight) return;
+      lastWidth = box.clientWidth;
+      lastHeight = box.clientHeight;
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function () {
+        buildWalls();
+        letters.forEach(function (l) {
+          var x = Math.min(Math.max(l.body.position.x, l.w / 2), box.clientWidth - l.w / 2);
+          if (x !== l.body.position.x) Body.setPosition(l.body, { x: x, y: -l.h });
+        });
+      }, 100);
+    }).observe(box);
+  }
+
+  // Wait for the letter images so their sizes are known before measuring.
+  if (document.readyState === 'complete') startGravity();
+  else window.addEventListener('load', startGravity);
+</script>
+<script src="login.js"></script>
+</body>
+</html>

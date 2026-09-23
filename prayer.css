@@ -1,0 +1,226 @@
+.prayer-request-form {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 32px 16px;
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.submission-card {
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding: 32px 28px;
+  border: 2px solid #000;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.form-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.form-fields .div {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.text-wrapper {
+  padding: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: #555;
+}
+
+/* Name: a single underline, like writing on a card */
+.input-line-container {
+  border-bottom: 2px solid #000;
+}
+
+.text-wrapper-2 {
+  width: 100%;
+  padding: 6px 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 18px;
+  color: #000;
+}
+
+.text-wrapper-2:focus {
+  outline: none;
+}
+
+.input-line-container:focus-within {
+  border-bottom-width: 3px;
+}
+
+.textarea-frame {
+  border: 1.5px solid #000;
+  border-radius: 8px;
+}
+
+.textarea-frame:focus-within {
+  outline: 2px solid #000;
+  outline-offset: 2px;
+}
+
+.p {
+  display: block;
+  width: 100%;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.5;
+  color: #000;
+  resize: vertical;
+}
+
+.p:focus {
+  outline: none;
+}
+
+::placeholder {
+  color: #9a9a9a;
+}
+
+/* Visibility: segmented toggle */
+.toggle-track {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  border: 1.5px solid #000;
+  border-radius: 24px;
+}
+
+.option-left,
+.option-right {
+  position: relative;
+  flex: 1 1 0;
+  cursor: pointer;
+}
+
+.toggle-track input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.toggle-track .frame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 8px;
+  border-radius: 999px;
+  font-size: 14px;
+  color: #000;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.toggle-track input:checked + .frame {
+  background: #000;
+  color: #fff;
+}
+
+.toggle-track input:focus-visible + .frame {
+  outline: 2px solid #000;
+  outline-offset: 3px;
+}
+
+.icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Submit: matches the home page's black "Drop your prayer" button */
+.form-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.submit-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 20px;
+  border-radius: 10px;
+  background: #000;
+  color: #fff;
+  font-size: 18px;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.submit-button .icon {
+  width: 20px;
+  height: 20px;
+}
+
+.submit-button:hover {
+  transform: translateY(-2px);
+}
+
+.submit-button:active {
+  transform: translateY(0);
+  opacity: 0.85;
+}
+
+.submit-button:focus-visible {
+  outline: 3px solid #000;
+  outline-offset: 4px;
+}
+
+.back-link {
+  color: #000;
+  font-size: 15px;
+}
+
+@media (max-width: 420px) {
+  .submission-card {
+    padding: 24px 18px;
+  }
+
+  .toggle-track .frame {
+    gap: 5px;
+    padding: 10px 4px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  .option-left,
+  .option-right {
+    flex-basis: auto;
+  }
+
+  .toggle-track .icon {
+    width: 14px;
+    height: 14px;
+  }
+}
