@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta charset="utf-8" />
 <title>Prayer Box · Request</title>
 <link rel="stylesheet" href="globals.css">
@@ -14,14 +14,14 @@
       <div class="div">
         <label class="text-wrapper" for="name">YOUR NAME</label>
         <div class="input-line-container">
-          <input class="text-wrapper-2" id="name" name="name" type="text" placeholder="Lakshman" autocomplete="given-name" />
+          <input class="text-wrapper-2" id="name" name="name" type="text" maxlength="40" placeholder="Lakshman" autocomplete="given-name" />
         </div>
       </div>
 
       <div class="div">
         <label class="text-wrapper" for="request">PRAYER REQUEST</label>
         <div class="textarea-frame">
-          <textarea class="p" id="request" name="request" rows="5" required
+          <textarea class="p" id="request" name="request" rows="5" maxlength="2000" required
             placeholder="Please pray for my grandmother who is undergoing surgery tomorrow morning. Praying for peace for our family and a swift, steady recovery."></textarea>
         </div>
       </div>
@@ -52,6 +52,7 @@
         <span class="text-wrapper-5">Submit Prayer Request</span>
         <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </button>
+      <p class="form-error" id="form-error" role="alert" hidden></p>
     </div>
   </form>
   <p class="page-links">
@@ -61,8 +62,10 @@
 </main>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
 <script src="auth.js"></script>
+<script src="db.js"></script>
 <script>
   // Only signed-in people can drop a prayer; everyone else goes to the login box first.
   PrayerAuth.currentUser().then(function (user) {
@@ -74,24 +77,29 @@
     PrayerAuth.logOut().then(function () { location.href = 'index.html'; });
   });
 
-  // No backend yet: prayers are kept in this browser, and never put in the URL.
+  // Save the prayer to the shared box, then go home to watch it drop in.
   document.getElementById('prayer-form').addEventListener('submit', function (e) {
     e.preventDefault();
     var data = new FormData(this);
     var anonymous = data.get('visibility') === 'anonymous';
     var name = String(data.get('name') || '').trim();
-    var prayer = {
+    var request = String(data.get('request') || '').trim();
+    var error = document.getElementById('form-error');
+    var submit = this.querySelector('.submit-button');
+    if (!request) return document.getElementById('request').focus();
+    error.hidden = true;
+    submit.disabled = true;
+    PrayerDB.addPrayer({
       name: anonymous || !name ? 'Anonymous' : name,
-      request: String(data.get('request')).trim(),
-      visibility: data.get('visibility'),
-      createdAt: new Date().toISOString()
-    };
-    try {
-      var prayers = JSON.parse(localStorage.getItem('prayers') || '[]');
-      prayers.push(prayer);
-      localStorage.setItem('prayers', JSON.stringify(prayers));
-    } catch (err) {}
-    location.href = 'box.html';
+      request: request,
+      visibility: data.get('visibility')
+    }).then(function () {
+      location.href = 'index.html';
+    }, function (err) {
+      submit.disabled = false;
+      error.textContent = PrayerDB.errorMessage(err);
+      error.hidden = false;
+    });
   });
 </script>
 </body>

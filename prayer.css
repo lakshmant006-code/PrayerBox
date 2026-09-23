@@ -197,6 +197,19 @@
   outline-offset: 4px;
 }
 
+.form-error {
+  margin: 0;
+  font-size: 14px;
+  color: #b3261e;
+  text-align: center;
+}
+
+.submit-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+  transform: none;
+}
+
 .page-links {
   display: flex;
   gap: 24px;

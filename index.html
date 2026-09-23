@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta charset="utf-8" />
 <title>Prayer Box</title>
 <link rel="stylesheet" href="globals.css">
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="login.css">
+<link rel="stylesheet" href="box.css">
 </head>
 <body>
 <main class="desktop">
@@ -18,12 +19,60 @@
     <a class="drop-button" href="prayer.html">
       <img class="img" src="img/frame-9.png" alt="Drop your prayer" />
     </a>
+    <ul class="letters" id="letters" aria-label="Prayers in the box"></ul>
   </div>
 </main>
+
+<template id="letter-template">
+  <li class="letter-named">
+    <button class="letter-open" type="button">
+      <img class="letter-img" src="img/letter-1.png" alt="" draggable="false" />
+      <span class="text-wrapper"></span>
+    </button>
+  </li>
+</template>
+
+<dialog class="note" id="note" aria-labelledby="note-name">
+  <button class="note-close" type="button" aria-label="Close">&times;</button>
+  <p class="note-label">PRAYER REQUEST FROM</p>
+  <h2 class="note-name" id="note-name"></h2>
+  <p class="note-request" id="note-request"></p>
+  <p class="note-date" id="note-date"></p>
+  <p class="note-sample" id="note-sample" hidden>This is a sample letter that shows how the box works.</p>
+
+  <section class="replies" id="replies" aria-labelledby="replies-title">
+    <h3 class="note-label" id="replies-title">REPLIES</h3>
+    <ul class="reply-list" id="reply-list"></ul>
+    <p class="reply-empty" id="reply-empty">No replies yet. Be the first to pray along.</p>
+
+    <button class="reply-send reply-login" id="reply-login" type="button" hidden>Log in to reply</button>
+
+    <form class="reply-form" id="reply-form" hidden>
+      <label class="note-label" for="reply-text">SEND A REPLY</label>
+      <textarea class="reply-text" id="reply-text" name="text" rows="3" maxlength="1000" required
+        placeholder="Praying for you and your family."></textarea>
+      <fieldset class="reply-as">
+        <legend class="visually-hidden">Reply as</legend>
+        <label><input type="radio" name="as" value="name" checked /><span>Reply with my name</span></label>
+        <label><input type="radio" name="as" value="anonymous" /><span>Reply anonymously</span></label>
+      </fieldset>
+      <input class="reply-name" id="reply-name" name="name" type="text" maxlength="40" placeholder="Your name"
+        autocomplete="given-name" aria-label="Your name" />
+      <p class="reply-error" id="reply-error" role="alert" hidden></p>
+      <button class="reply-send" type="submit">Send reply</button>
+    </form>
+  </section>
+</dialog>
+
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
 <script src="auth.js"></script>
+<script src="db.js"></script>
 <script src="login.js"></script>
+<script src="samples.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+<script src="box.js"></script>
 </body>
 </html>

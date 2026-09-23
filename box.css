@@ -1,3 +1,27 @@
+/* Letter size shrinks on tablets and phones so more of them fit on the screen.
+   box.js measures the rendered letter, so the physics and the count follow these. */
+:root {
+  --letter-width: 60px;
+  --letter-icon: 40px;
+  --letter-font: 11px;
+}
+
+@media (max-width: 1024px) {
+  :root {
+    --letter-width: 52px;
+    --letter-icon: 34px;
+    --letter-font: 10px;
+  }
+}
+
+@media (max-width: 600px) {
+  :root {
+    --letter-width: 44px;
+    --letter-icon: 28px;
+    --letter-font: 9px;
+  }
+}
+
 /* The box page keeps the home header at the top and gives the rest of the
    screen to the letter pile. */
 .desktop {
@@ -27,7 +51,7 @@
 }
 
 .letter-named {
-  width: 60px;
+  width: var(--letter-width);
   user-select: none;
 }
 
@@ -88,7 +112,7 @@
 }
 
 .letter-img {
-  width: 40px;
+  width: var(--letter-icon);
   height: auto;
 }
 
@@ -98,7 +122,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   font-family: Georgia, "Times New Roman", serif;
-  font-size: 11px;
+  font-size: var(--letter-font);
 }
 
 /* The opened letter */
@@ -333,4 +357,57 @@
 .reply-send:focus-visible {
   outline: 3px solid #000;
   outline-offset: 3px;
+}
+
+.note-sample {
+  margin: 18px 0 0;
+  font-size: 13px;
+  font-style: italic;
+  color: #666;
+}
+
+.reply-error {
+  margin: 0;
+  font-size: 14px;
+  color: #b3261e;
+}
+
+.reply-send:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.reply-login {
+  align-self: flex-start;
+}
+
+.replies {
+  display: flex;
+  flex-direction: column;
+}
+
+.replies[hidden],
+.reply-form[hidden],
+.reply-login[hidden] {
+  display: none;
+}
+
+/* Phones: a little less padding inside the opened letter */
+@media (max-width: 600px) {
+  .note {
+    padding: 32px 20px 20px;
+  }
+
+  .note-name {
+    font-size: 21px;
+  }
+
+  .note-request {
+    font-size: 16px;
+  }
+
+  .reply-as span {
+    padding: 8px 6px;
+    font-size: 13px;
+  }
 }

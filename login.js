@@ -100,4 +100,12 @@
 
   // The prayer page sends signed-out visitors here with ?login to sign in first.
   if (new URLSearchParams(location.search).has('login')) openLogin();
+
+  // Lets other parts of the page ask for a sign-in, then come back to `returnTo`.
+  window.PrayerLogin = {
+    open: function (returnTo) {
+      next = returnTo;
+      openLogin();
+    }
+  };
 })();
