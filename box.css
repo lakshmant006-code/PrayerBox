@@ -27,7 +27,7 @@
 }
 
 .letter-named {
-  width: 72px;
+  width: 60px;
   user-select: none;
 }
 
@@ -56,16 +56,22 @@
 .letters:not(.has-physics) .letter-named:nth-child(4n + 3) { transform: rotate(-2deg); }
 .letters:not(.has-physics) .letter-named:nth-child(4n + 4) { transform: rotate(7deg); }
 
-/* Physics layout: the list becomes the box the letters fall into */
+/* Physics layout: the letters fill the whole screen, behind the title and button,
+   which act as solid shapes the letters pile around. */
 .letters.has-physics {
-  position: relative;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
   display: block;
-  flex: 1;
-  min-height: 300px;
-  border-bottom: 2px solid #000;
   cursor: grab;
   touch-action: none;
-  overflow-x: clip;
+  overflow: clip;
+}
+
+.desktop > .frame > .div,
+.desktop > .frame > .drop-button {
+  position: relative;
+  z-index: 1;
 }
 
 .letters.has-physics.is-dragging {
@@ -82,7 +88,7 @@
 }
 
 .letter-img {
-  width: 50px;
+  width: 40px;
   height: auto;
 }
 
@@ -92,7 +98,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   font-family: Georgia, "Times New Roman", serif;
-  font-size: 13px;
+  font-size: 11px;
 }
 
 /* The opened letter */
@@ -182,4 +188,149 @@
 
 .note-date:empty {
   display: none;
+}
+
+/* Replies inside the opened letter */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.replies {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #ddd;
+}
+
+.reply-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.reply {
+  padding: 10px 12px;
+  border-left: 3px solid #000;
+  border-radius: 0 8px 8px 0;
+  background: #f6f6f6;
+}
+
+.reply-who {
+  margin: 0 0 4px;
+  font-size: 12px;
+  color: #666;
+}
+
+.reply-body {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.reply-empty {
+  margin: 0 0 16px;
+  font-size: 14px;
+  color: #666;
+}
+
+.reply-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.reply-text,
+.reply-name {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px solid #000;
+  border-radius: 8px;
+  background: #fff;
+  font: inherit;
+  font-size: 15px;
+  color: #000;
+}
+
+.reply-text {
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.reply-text:focus,
+.reply-name:focus {
+  outline: 2px solid #000;
+  outline-offset: 2px;
+}
+
+.reply-name[hidden] {
+  display: none;
+}
+
+/* Name / anonymous switch, same look as the prayer form's visibility toggle */
+.reply-as {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  padding: 4px;
+  border: 1.5px solid #000;
+  border-radius: 24px;
+}
+
+.reply-as label {
+  position: relative;
+  flex: 1 1 auto;
+  cursor: pointer;
+}
+
+.reply-as input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.reply-as span {
+  display: block;
+  padding: 8px 10px;
+  border-radius: 999px;
+  text-align: center;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.reply-as input:checked + span {
+  background: #000;
+  color: #fff;
+}
+
+.reply-as input:focus-visible + span {
+  outline: 2px solid #000;
+  outline-offset: 3px;
+}
+
+.reply-send {
+  align-self: flex-end;
+  padding: 10px 18px;
+  border-radius: 10px;
+  background: #000;
+  color: #fff;
+  font-size: 15px;
+}
+
+.reply-send:hover {
+  opacity: 0.85;
+}
+
+.reply-send:focus-visible {
+  outline: 3px solid #000;
+  outline-offset: 3px;
 }

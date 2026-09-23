@@ -1,18 +1,6 @@
 // Login box shown when "Drop your prayer" is pressed, before the prayer request page.
-// There is no server yet, so any email and password are accepted: this only
-// remembers (for this browser tab) that the person signed in, and never stores the password.
+// Signing in goes through PrayerAuth (auth.js).
 (function () {
-  var SIGNED_IN_KEY = 'signedInEmail';
-
-  function isSignedIn() {
-    try { return !!sessionStorage.getItem(SIGNED_IN_KEY); } catch (e) { return false; }
-  }
-
-  function signIn(email, next) {
-    try { sessionStorage.setItem(SIGNED_IN_KEY, email || 'google'); } catch (e) {}
-    location.href = next;
-  }
-
   var dialog = document.createElement('dialog');
   dialog.className = 'login';
   dialog.setAttribute('aria-labelledby', 'login-title');
@@ -40,12 +28,29 @@
   var email = dialog.querySelector('#login-email');
   var password = dialog.querySelector('#login-password');
   var error = dialog.querySelector('.login-error');
+  var buttons = dialog.querySelectorAll('.login-actions .login-btn');
   var next = 'prayer.html';
 
   function showError(message, field) {
     error.textContent = message;
     error.hidden = false;
-    field.focus();
+    if (field) field.focus();
+  }
+
+  function setBusy(busy) {
+    Array.prototype.forEach.call(buttons, function (b) { b.disabled = busy; });
+    form.setAttribute('aria-busy', busy ? 'true' : 'false');
+  }
+
+  function attempt(signIn) {
+    error.hidden = true;
+    setBusy(true);
+    signIn.then(function () {
+      location.href = next;
+    }, function (err) {
+      setBusy(false);
+      showError(PrayerAuth.errorMessage(err));
+    });
   }
 
   form.addEventListener('submit', function (e) {
@@ -56,11 +61,14 @@
     if (!password.value) {
       return showError('Please enter your password.', password);
     }
-    signIn(email.value.trim(), next);
+    var register = e.submitter && e.submitter.getAttribute('data-action') === 'register';
+    attempt(register
+      ? PrayerAuth.register(email.value.trim(), password.value)
+      : PrayerAuth.logIn(email.value.trim(), password.value));
   });
 
   dialog.querySelector('[data-action="google"]').addEventListener('click', function () {
-    signIn('', next);
+    attempt(PrayerAuth.google());
   });
 
   dialog.querySelector('.login-close').addEventListener('click', function () { dialog.close(); });
@@ -71,15 +79,25 @@
   dialog.addEventListener('close', function () {
     form.reset();
     error.hidden = true;
+    setBusy(false);
   });
+
+  function openLogin() {
+    dialog.showModal();
+    email.focus();
+  }
 
   document.querySelectorAll('a.drop-button').forEach(function (link) {
     link.addEventListener('click', function (e) {
-      if (isSignedIn()) return;
       e.preventDefault();
       next = link.getAttribute('href');
-      dialog.showModal();
-      email.focus();
+      PrayerAuth.currentUser().then(function (user) {
+        if (user) location.href = next;
+        else openLogin();
+      });
     });
   });
+
+  // The prayer page sends signed-out visitors here with ?login to sign in first.
+  if (new URLSearchParams(location.search).has('login')) openLogin();
 })();

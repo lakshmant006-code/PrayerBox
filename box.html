@@ -37,39 +37,139 @@
   <h2 class="note-name" id="note-name"></h2>
   <p class="note-request" id="note-request"></p>
   <p class="note-date" id="note-date"></p>
+
+  <section class="replies" aria-labelledby="replies-title">
+    <h3 class="note-label" id="replies-title">REPLIES</h3>
+    <ul class="reply-list" id="reply-list"></ul>
+    <p class="reply-empty" id="reply-empty">No replies yet. Be the first to pray along.</p>
+
+    <form class="reply-form" id="reply-form">
+      <label class="note-label" for="reply-text">SEND A REPLY</label>
+      <textarea class="reply-text" id="reply-text" name="text" rows="3" required
+        placeholder="Praying for you and your family."></textarea>
+      <fieldset class="reply-as">
+        <legend class="visually-hidden">Reply as</legend>
+        <label><input type="radio" name="as" value="name" checked /><span>Reply with my name</span></label>
+        <label><input type="radio" name="as" value="anonymous" /><span>Reply anonymously</span></label>
+      </fieldset>
+      <input class="reply-name" id="reply-name" name="name" type="text" placeholder="Your name"
+        autocomplete="given-name" aria-label="Your name" />
+      <button class="reply-send" type="submit">Send reply</button>
+    </form>
+  </section>
 </dialog>
 
+<script src="samples.js"></script>
 <script>
-  // Placeholder letters from the design, shown until real prayers exist.
-  var SAMPLE_REQUEST = 'Please pray for my grandmother who is undergoing surgery tomorrow morning. ' +
-    'Praying for peace for our family and a swift, steady recovery.';
-  var PLACEHOLDERS = [1, 2, 3, 4, 5, 6, 7].map(function () {
-    return { name: 'Lakshman', request: SAMPLE_REQUEST };
-  });
-
   var prayers = [];
   try {
     prayers = JSON.parse(localStorage.getItem('prayers') || '[]');
   } catch (e) {}
 
-  var entries = prayers.length ? prayers.slice().reverse() : PLACEHOLDERS;
+  // Enough sample letters to fill the whole screen, roughly.
+  var list = document.getElementById('letters');
+  var LETTER_AREA = 60 * 64;
+  var FILL = 0.8; // piles leave gaps; more than this spills off the top of the screen
+  var fillCount = Math.floor((window.innerWidth * window.innerHeight) / LETTER_AREA * FILL);
+
+  // Real prayers first (newest on top of the pile), then this session's sample letters.
+  var samples = window.SamplePrayers ? SamplePrayers.get(Math.max(0, fillCount - prayers.length)) : [];
+  var entries = prayers.slice().reverse().concat(samples);
 
   var note = document.getElementById('note');
+  var replyForm = document.getElementById('reply-form');
+  var replyText = document.getElementById('reply-text');
+  var replyName = document.getElementById('reply-name');
+  var currentPrayer = null;
+
+  function formatDate(iso) {
+    return new Date(iso).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
+  }
+
+  // Replies are kept in this browser for now, keyed by the prayer they answer.
+  function prayerKey(prayer) {
+    return prayer.createdAt + '|' + prayer.name + '|' + prayer.request.slice(0, 40);
+  }
+  function loadReplies() {
+    try { return JSON.parse(localStorage.getItem('replies') || '{}'); } catch (e) { return {}; }
+  }
+  function renderReplies(prayer) {
+    var replies = loadReplies()[prayerKey(prayer)] || [];
+    var replyList = document.getElementById('reply-list');
+    replyList.textContent = '';
+    replies.forEach(function (reply) {
+      var li = document.createElement('li');
+      li.className = 'reply';
+      var who = document.createElement('p');
+      who.className = 'reply-who';
+      who.textContent = reply.name + ' · ' + formatDate(reply.createdAt);
+      var body = document.createElement('p');
+      body.className = 'reply-body';
+      body.textContent = reply.text;
+      li.appendChild(who);
+      li.appendChild(body);
+      replyList.appendChild(li);
+    });
+    document.getElementById('reply-empty').hidden = replies.length > 0;
+  }
+
+  function syncReplyAs() {
+    var anonymous = replyForm.elements.as.value === 'anonymous';
+    replyName.hidden = anonymous;
+    replyName.required = !anonymous;
+  }
+  replyForm.addEventListener('change', syncReplyAs);
+
+  replyForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var text = replyText.value.trim();
+    if (!text) return replyText.focus();
+    var anonymous = replyForm.elements.as.value === 'anonymous';
+    var name = replyName.value.trim();
+    if (!anonymous && !name) return replyName.focus();
+    var all = loadReplies();
+    var key = prayerKey(currentPrayer);
+    (all[key] = all[key] || []).push({
+      name: anonymous ? 'Anonymous' : name,
+      text: text,
+      createdAt: new Date().toISOString()
+    });
+    try {
+      localStorage.setItem('replies', JSON.stringify(all));
+      if (!anonymous) localStorage.setItem('replyName', name);
+    } catch (err) {}
+    replyText.value = '';
+    renderReplies(currentPrayer);
+  });
+
   function openNote(prayer) {
+    currentPrayer = prayer;
     document.getElementById('note-name').textContent = prayer.name;
     document.getElementById('note-request').textContent = prayer.request;
-    document.getElementById('note-date').textContent = prayer.createdAt
-      ? new Date(prayer.createdAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })
-      : '';
+    document.getElementById('note-date').textContent = prayer.createdAt ? formatDate(prayer.createdAt) : '';
+    renderReplies(prayer);
+    replyText.value = '';
+    // Pre-fill the name from the last reply, or from the signed-in account.
+    if (!replyName.value) {
+      try { replyName.value = localStorage.getItem('replyName') || ''; } catch (e) {}
+      if (!replyName.value && window.PrayerAuth) {
+        PrayerAuth.currentUser().then(function (user) {
+          if (user && user.displayName && !replyName.value) replyName.value = user.displayName.split(' ')[0];
+        });
+      }
+    }
+    syncReplyAs();
     note.showModal();
   }
   note.querySelector('.note-close').addEventListener('click', function () { note.close(); });
   // Clicking the dimmed backdrop (outside the note) closes it too.
   note.addEventListener('click', function (e) {
-    if (e.target === note) note.close();
+    if (e.target !== note) return;
+    var r = note.getBoundingClientRect();
+    var inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+    if (!inside) note.close();
   });
 
-  var list = document.getElementById('letters');
   var template = document.getElementById('letter-template');
   entries.forEach(function (prayer) {
     var item = template.content.firstElementChild.cloneNode(true);
@@ -104,6 +204,8 @@
 
     var WALL = 200;
     var walls = [];
+    // The title and the button are solid, so letters pile around them instead of covering them.
+    var obstacles = document.querySelectorAll('.desktop > .frame > .div, .desktop > .frame > .drop-button');
     function buildWalls() {
       Composite.remove(world, walls);
       var w = box.clientWidth, h = box.clientHeight, tall = h * 6;
@@ -113,15 +215,26 @@
         Bodies.rectangle(-WALL / 2, h - tall / 2, WALL, tall, { isStatic: true }),
         Bodies.rectangle(w + WALL / 2, h - tall / 2, WALL, tall, { isStatic: true })
       ];
+      var boxRect = box.getBoundingClientRect();
+      Array.prototype.forEach.call(obstacles, function (el) {
+        var r = el.getBoundingClientRect(), pad = 10;
+        walls.push(Bodies.rectangle(
+          r.left - boxRect.left + r.width / 2, r.top - boxRect.top + r.height / 2,
+          r.width + pad * 2, r.height + pad * 2,
+          { isStatic: true, chamfer: { radius: 12 } }
+        ));
+      });
       Composite.add(world, walls);
     }
     buildWalls();
 
     // Oldest first, so the newest prayer lands on top of the pile.
+    // They drop in rows, several side by side, so a full box fills quickly.
+    var perRow = Math.max(1, Math.floor(box.clientWidth / 110));
     var letters = items.slice().reverse().map(function (el, i) {
       var w = el.offsetWidth, h = el.offsetHeight;
       var x = w / 2 + Math.random() * Math.max(1, box.clientWidth - w);
-      var y = -h - i * (h * 0.9);
+      var y = -h - Math.floor(i / perRow) * h * 1.1 - Math.random() * h;
       var body = Bodies.rectangle(x, y, w, h, {
         restitution: 0.35,
         friction: 0.4,
@@ -199,6 +312,10 @@
   if (document.readyState === 'complete') startGravity();
   else window.addEventListener('load', startGravity);
 </script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="auth.js"></script>
 <script src="login.js"></script>
 </body>
 </html>

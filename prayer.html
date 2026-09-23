@@ -54,9 +54,26 @@
       </button>
     </div>
   </form>
-  <a class="back-link" href="index.html">← Back</a>
+  <p class="page-links">
+    <a class="back-link" href="index.html">← Back</a>
+    <button class="back-link log-out" type="button" id="log-out">Log out</button>
+  </p>
 </main>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="auth.js"></script>
 <script>
+  // Only signed-in people can drop a prayer; everyone else goes to the login box first.
+  PrayerAuth.currentUser().then(function (user) {
+    if (!user) return location.replace('index.html?login');
+    var name = document.getElementById('name');
+    if (!name.value && user.displayName) name.value = user.displayName.split(' ')[0];
+  });
+  document.getElementById('log-out').addEventListener('click', function () {
+    PrayerAuth.logOut().then(function () { location.href = 'index.html'; });
+  });
+
   // No backend yet: prayers are kept in this browser, and never put in the URL.
   document.getElementById('prayer-form').addEventListener('submit', function (e) {
     e.preventDefault();

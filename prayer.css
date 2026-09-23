@@ -197,9 +197,20 @@
   outline-offset: 4px;
 }
 
+.page-links {
+  display: flex;
+  gap: 24px;
+  margin: 0;
+}
+
 .back-link {
   color: #000;
   font-size: 15px;
+}
+
+.log-out {
+  font-family: inherit;
+  text-decoration: underline;
 }
 
 @media (max-width: 420px) {
