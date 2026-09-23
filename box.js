@@ -48,6 +48,27 @@
   }
   replyForm.addEventListener('change', syncReplyAs);
 
+  // Sample letters aren't in the database, so replies to them are kept on this device only.
+  var LOCAL_REPLIES = 'sampleReplies';
+  function sampleKey(prayer) {
+    return prayer.createdAt + '|' + prayer.name + '|' + prayer.request.slice(0, 40);
+  }
+  function loadSampleReplies(prayer) {
+    try { return JSON.parse(localStorage.getItem(LOCAL_REPLIES) || '{}')[sampleKey(prayer)] || []; }
+    catch (e) { return []; }
+  }
+  function addSampleReply(prayer, reply) {
+    try {
+      var all = JSON.parse(localStorage.getItem(LOCAL_REPLIES) || '{}');
+      var key = sampleKey(prayer);
+      (all[key] = all[key] || []).push({ name: reply.name, text: reply.text, createdAt: new Date().toISOString() });
+      localStorage.setItem(LOCAL_REPLIES, JSON.stringify(all));
+      return Promise.resolve();
+    } catch (e) {
+      return Promise.reject(e);
+    }
+  }
+
   replyForm.addEventListener('submit', function (e) {
     e.preventDefault();
     var text = replyText.value.trim();
@@ -57,9 +78,14 @@
     if (!anonymous && !name) return replyName.focus();
     replyError.hidden = true;
     replySend.disabled = true;
-    PrayerDB.addReply(currentPrayer.id, { name: anonymous ? 'Anonymous' : name, text: text }).then(function () {
+    var reply = { name: anonymous ? 'Anonymous' : name, text: text };
+    var prayer = currentPrayer;
+    var saved = prayer.sample ? addSampleReply(prayer, reply) : PrayerDB.addReply(prayer.id, reply);
+    saved.then(function () {
       replySend.disabled = false;
       replyText.value = '';
+      // Real prayers update through the live listener; sample replies are re-read here.
+      if (prayer.sample) renderReplies(loadSampleReplies(prayer));
       if (!anonymous) {
         try { localStorage.setItem('replyName', name); } catch (err) {}
       }
@@ -93,15 +119,16 @@
     replyError.hidden = true;
     stopReplies();
 
-    // Sample letters only fill out the box; they aren't real prayers, so they take no replies.
+    // Sample letters only fill out the box: they say so, and their replies stay on this device.
     sampleNotice.hidden = !prayer.sample;
-    replies.hidden = !!prayer.sample;
-    if (!prayer.sample) {
+    if (prayer.sample) {
+      renderReplies(loadSampleReplies(prayer));
+    } else {
       renderReplies([]);
       stopReplies = PrayerDB.watchReplies(prayer.id, renderReplies);
-      PrayerAuth.currentUser().then(showReplyFormFor);
-      syncReplyAs();
     }
+    PrayerAuth.currentUser().then(showReplyFormFor);
+    syncReplyAs();
     note.showModal();
   }
 
