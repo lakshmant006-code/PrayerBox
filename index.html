@@ -19,6 +19,7 @@
     <a class="drop-button" href="prayer.html">
       <img class="img" src="img/frame-9.png" alt="Drop your prayer" />
     </a>
+    <p class="box-empty" id="box-empty" hidden>No prayers yet. Be the first to drop one.</p>
     <ul class="letters" id="letters" aria-label="Prayers in the box"></ul>
   </div>
 </main>
@@ -26,7 +27,7 @@
 <template id="letter-template">
   <li class="letter-named">
     <button class="letter-open" type="button">
-      <img class="letter-img" src="img/letter-1.png" alt="" draggable="false" />
+      <img class="letter-img" src="img/letter-1.png" alt="" width="83" height="93" draggable="false" />
       <span class="text-wrapper"></span>
     </button>
   </li>
@@ -38,7 +39,6 @@
   <h2 class="note-name" id="note-name"></h2>
   <p class="note-request" id="note-request"></p>
   <p class="note-date" id="note-date"></p>
-  <p class="note-sample" id="note-sample" hidden>This is a sample letter that shows how the box works. Replies to it are saved on this device only.</p>
 
   <section class="replies" id="replies" aria-labelledby="replies-title">
     <h3 class="note-label" id="replies-title">REPLIES</h3>
@@ -71,7 +71,6 @@
 <script src="auth.js"></script>
 <script src="db.js"></script>
 <script src="login.js"></script>
-<script src="samples.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
 <script src="box.js"></script>
 </body>

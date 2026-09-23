@@ -12,7 +12,6 @@
 
   var note = document.getElementById('note');
   var replies = document.getElementById('replies');
-  var sampleNotice = document.getElementById('note-sample');
   var replyForm = document.getElementById('reply-form');
   var replyText = document.getElementById('reply-text');
   var replyName = document.getElementById('reply-name');
@@ -48,27 +47,6 @@
   }
   replyForm.addEventListener('change', syncReplyAs);
 
-  // Sample letters aren't in the database, so replies to them are kept on this device only.
-  var LOCAL_REPLIES = 'sampleReplies';
-  function sampleKey(prayer) {
-    return prayer.createdAt + '|' + prayer.name + '|' + prayer.request.slice(0, 40);
-  }
-  function loadSampleReplies(prayer) {
-    try { return JSON.parse(localStorage.getItem(LOCAL_REPLIES) || '{}')[sampleKey(prayer)] || []; }
-    catch (e) { return []; }
-  }
-  function addSampleReply(prayer, reply) {
-    try {
-      var all = JSON.parse(localStorage.getItem(LOCAL_REPLIES) || '{}');
-      var key = sampleKey(prayer);
-      (all[key] = all[key] || []).push({ name: reply.name, text: reply.text, createdAt: new Date().toISOString() });
-      localStorage.setItem(LOCAL_REPLIES, JSON.stringify(all));
-      return Promise.resolve();
-    } catch (e) {
-      return Promise.reject(e);
-    }
-  }
-
   replyForm.addEventListener('submit', function (e) {
     e.preventDefault();
     var text = replyText.value.trim();
@@ -78,14 +56,9 @@
     if (!anonymous && !name) return replyName.focus();
     replyError.hidden = true;
     replySend.disabled = true;
-    var reply = { name: anonymous ? 'Anonymous' : name, text: text };
-    var prayer = currentPrayer;
-    var saved = prayer.sample ? addSampleReply(prayer, reply) : PrayerDB.addReply(prayer.id, reply);
-    saved.then(function () {
+    PrayerDB.addReply(currentPrayer.id, { name: anonymous ? 'Anonymous' : name, text: text }).then(function () {
       replySend.disabled = false;
       replyText.value = '';
-      // Real prayers update through the live listener; sample replies are re-read here.
-      if (prayer.sample) renderReplies(loadSampleReplies(prayer));
       if (!anonymous) {
         try { localStorage.setItem('replyName', name); } catch (err) {}
       }
@@ -119,14 +92,8 @@
     replyError.hidden = true;
     stopReplies();
 
-    // Sample letters only fill out the box: they say so, and their replies stay on this device.
-    sampleNotice.hidden = !prayer.sample;
-    if (prayer.sample) {
-      renderReplies(loadSampleReplies(prayer));
-    } else {
-      renderReplies([]);
-      stopReplies = PrayerDB.watchReplies(prayer.id, renderReplies);
-    }
+    renderReplies([]);
+    stopReplies = PrayerDB.watchReplies(prayer.id, renderReplies);
     PrayerAuth.currentUser().then(showReplyFormFor);
     syncReplyAs();
     note.showModal();
@@ -202,9 +169,13 @@
 
     // The floor is the bottom of what's actually visible. On phones, browser toolbars can
     // float over the bottom of the page, and letters would pile up hidden underneath them.
+    var svhProbe = document.createElement('div');
+    svhProbe.style.cssText = 'position:fixed;top:0;left:0;width:0;height:100svh;visibility:hidden;pointer-events:none';
+    document.body.appendChild(svhProbe);
     function visibleHeight() {
       var h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-      return Math.min(box.clientHeight, Math.round(h));
+      var small = svhProbe.offsetHeight || h; // 100svh: the height with the browser's toolbars showing
+      return Math.round(Math.min(box.clientHeight, h, small));
     }
 
     var WALL = 200;
@@ -365,22 +336,26 @@
 
   var gravity = null;
   var byId = {};
-  var sampleItems = [];
+  var emptyNote = document.getElementById('box-empty');
+
+  function updateEmpty() {
+    emptyNote.hidden = Object.keys(byId).length > 0;
+  }
 
   function addLive(prayer) {
     if (byId[prayer.id]) return;
     var el = byId[prayer.id] = makeLetter(prayer);
     gravity.add(el);
-    // Keep the box about as full as before: a real prayer takes a sample letter's place.
-    var sample = sampleItems.shift();
-    if (sample) gravity.remove(sample);
+    updateEmpty();
   }
 
+  // The box shows the newest prayers that fit on screen; as new ones arrive, the oldest leave.
   function removeLive(id) {
     var el = byId[id];
     if (!el) return;
     delete byId[id];
     gravity.remove(el);
+    updateEmpty();
   }
 
   function start() {
@@ -389,11 +364,7 @@
       onInitial: function (prayers) {
         // Newest first, so the newest prayer lands on top of the pile.
         prayers.forEach(function (prayer) { byId[prayer.id] = makeLetter(prayer); });
-        // Sample letters fill whatever space real prayers don't (samples.js).
-        var samples = window.SamplePrayers ? SamplePrayers.get(Math.max(0, capacity - prayers.length)) : [];
-        samples.forEach(function (prayer) { sampleItems.push(makeLetter(prayer)); });
-        // Remove samples oldest-first: they sit at the end of the list, at the bottom of the pile.
-        sampleItems.reverse();
+        updateEmpty();
         gravity = startGravity();
       },
       onAdded: addLive,

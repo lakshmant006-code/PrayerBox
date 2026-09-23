@@ -119,6 +119,7 @@
 .letter-img {
   width: var(--letter-icon);
   height: auto;
+  aspect-ratio: 83 / 93;
 }
 
 .letter-named .text-wrapper {
@@ -364,13 +365,6 @@
   outline-offset: 3px;
 }
 
-.note-sample {
-  margin: 18px 0 0;
-  font-size: 13px;
-  font-style: italic;
-  color: #666;
-}
-
 .reply-error {
   margin: 0;
   font-size: 14px;
@@ -424,4 +418,19 @@
   .reply-send {
     min-height: 44px;
   }
+}
+
+/* Shown while the box has no prayers yet */
+.box-empty {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 15px;
+  color: #666;
+  text-align: center;
+}
+
+.box-empty[hidden] {
+  display: none;
 }
