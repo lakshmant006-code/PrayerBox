@@ -117,6 +117,19 @@
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 
+.login-btn-google {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.google-logo {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
 .login-btn:hover {
   border-color: #1a1a1a;
 }
