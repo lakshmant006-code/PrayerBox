@@ -114,8 +114,64 @@ body {
   flex: 0 0 auto;
   display: flex;
   align-items: baseline;
-  justify-content: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
   padding: 16px clamp(16px, 4vw, 32px) 0;
+}
+
+.auth {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+/* Google's own button spec: light surface, neutral border, the four-colour
+   "G" unaltered; kept light in both themes so the logo colours stay true */
+.google-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 36px;
+  padding: 0 14px 0 10px;
+  font-family: Roboto, system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1f1f1f;
+  background: #ffffff;
+  border: 1px solid #747775;
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.16s ease, box-shadow 0.16s ease;
+}
+.google-btn:hover {
+  background: #f8f9fa;
+  box-shadow: 0 1px 3px rgba(31, 26, 20, 0.2);
+}
+.google-btn:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.google-logo {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+
+.auth-note {
+  margin: 0;
+  max-width: 220px;
+  font-family: system-ui, sans-serif;
+  font-size: 12px;
+  line-height: 1.35;
+  letter-spacing: 0.02em;
+  color: var(--ink-muted);
+}
+.auth-note[hidden] {
+  display: none;
 }
 
 .counters {
@@ -124,6 +180,7 @@ body {
   letter-spacing: 0.04em;
   color: var(--meta);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .visually-hidden {

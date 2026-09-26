@@ -20,6 +20,21 @@ function updateCounters() {
 }
 updateCounters();
 
+const googleBtn = document.querySelector<HTMLButtonElement>("#googleBtn")!;
+const authNote = document.querySelector<HTMLParagraphElement>("#authNote")!;
+let authNoteTimer: number | undefined;
+
+// Google sign-in needs a Supabase project + Google OAuth client, which
+// don't exist yet, so say so instead of leaving the button dead
+googleBtn.addEventListener("click", () => {
+  authNote.textContent = "Google sign-in isn't connected yet.";
+  authNote.hidden = false;
+  window.clearTimeout(authNoteTimer);
+  authNoteTimer = window.setTimeout(() => {
+    authNote.hidden = true;
+  }, 4000);
+});
+
 function openForm() {
   createBtn.hidden = true;
   prayerForm.hidden = false;
