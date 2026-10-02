@@ -4,7 +4,7 @@
 // turned on reply emails. Checks that the caller really wrote that reply, sends at most one
 // email per reply, never emails people about their own replies, and sends at most one email
 // per prayer every 15 minutes so a burst of replies doesn't flood anyone's inbox.
-const { SITE, firebase, escapeHtml, quote, button, message, sendOne } = require('./_lib/server');
+const { SITE, firebase, card, words, byline, message, sendOne } = require('./_lib/server');
 
 const FRESH_MS = 10 * 60 * 1000;      // only replies posted in the last 10 minutes
 const PER_PRAYER_MS = 15 * 60 * 1000; // at most one email per prayer every 15 minutes
@@ -84,15 +84,20 @@ module.exports = async function (req, res) {
     const who = reply.name === 'Anonymous' ? 'Someone' : reply.name;
     const excerpt = prayer.request.length > 160 ? prayer.request.slice(0, 160) + '…' : prayer.request;
 
-    const html =
-      '<p style="margin:0 0 6px;"><strong>' + escapeHtml(who) + '</strong> replied to your prayer:</p>' +
-      quote(reply.text) +
-      '<p style="margin:16px 0 0;font-size:14px;color:#555;">Your prayer: “' + escapeHtml(excerpt) + '”</p>' +
-      button(SITE + '/dashboard.html', 'See it in My prayers');
-    const text = who + ' replied to your prayer:\n\n' + reply.text + '\n\nYour prayer: "' + excerpt +
-      '"\n\nSee it in My prayers: ' + SITE + '/dashboard.html';
-
-    await sendOne(message(owner.email, ownerUid, who + ' replied to your prayer', html, text));
+    await sendOne(message(owner.email, ownerUid, {
+      subject: who + ' replied to your prayer',
+      heading: who === 'Someone' ? 'Someone is praying with you' : who + ' is praying with you',
+      intro: 'You have a new reply to your prayer.',
+      preview: reply.text.slice(0, 120),
+      bodyHtml:
+        card(byline(who === 'Someone' ? 'Anonymous replied' : who + ' replied') + words(reply.text)) +
+        '<div style="height:12px;line-height:12px;">&nbsp;</div>' +
+        card(byline('Your prayer') + words(excerpt)),
+      buttonHref: SITE + '/dashboard.html',
+      buttonLabel: 'See your prayers',
+      text: who + ' replied to your prayer:\n\n' + reply.text + '\n\nYour prayer: "' + excerpt +
+        '"\n\nSee your prayers: ' + SITE + '/dashboard.html'
+    }));
     return res.status(200).json({ sent: true });
   } catch (err) {
     console.error('notify-reply failed', err);

@@ -4,7 +4,7 @@
 // prayer requests dropped since the last email (up to 10, newest first). If nothing new came
 // in, nobody is emailed. Vercel's free plan runs scheduled jobs at most daily, so this runs
 // every day and only sends when 48 hours (give or take an hour) have passed.
-const { SITE, firebase, escapeHtml, button, message, sendMany } = require('./_lib/server');
+const { SITE, firebase, card, words, byline, message, sendMany } = require('./_lib/server');
 
 const EVERY_MS = 47 * 60 * 60 * 1000; // 48 hours, with an hour of slack for cron timing
 const MAX_PRAYERS = 10;
@@ -50,20 +50,22 @@ module.exports = async function (req, res) {
     const subject = count === 1 ? '1 new prayer to pray for' : count + ' new prayers to pray for';
     const listHtml = prayers.map(function (p) {
       const text = p.request.length > 220 ? p.request.slice(0, 220) + '…' : p.request;
-      return '<li style="margin:0 0 14px;"><span style="font-size:13px;color:#666;">' + escapeHtml(p.name) + '</span><br>' +
-        '<span style="white-space:pre-wrap;">' + escapeHtml(text) + '</span></li>';
-    }).join('');
+      return card(byline(p.name) + words(text));
+    }).join('<div style="height:12px;line-height:12px;">&nbsp;</div>');
     const listText = prayers.map(function (p) { return '• ' + p.name + ': ' + p.request; }).join('\n\n');
 
     const messages = people.map(function (person) {
-      const html =
-        '<p style="margin:0 0 14px;">' + (count === 1 ? 'Someone has' : 'People have') +
-        ' dropped new prayer requests in the box. Would you pray for them?</p>' +
-        '<ul style="margin:0;padding-left:18px;">' + listHtml + '</ul>' +
-        button(SITE + '/', 'Open the Prayer Box');
-      const text = 'New prayer requests in the box. Would you pray for them?\n\n' + listText +
-        '\n\nOpen the Prayer Box: ' + SITE + '/';
-      return message(person.email, person.uid, subject, html, text);
+      return message(person.email, person.uid, {
+        subject: subject,
+        heading: count === 1 ? 'A new prayer to pray for' : count + ' new prayers to pray for',
+        intro: (count === 1 ? 'Someone has' : 'People have') + ' dropped prayer requests in the box. Would you pray for them?',
+        preview: prayers[0].request.slice(0, 120),
+        bodyHtml: listHtml,
+        buttonHref: SITE + '/',
+        buttonLabel: 'Open the Prayer Box',
+        text: 'New prayer requests in the box. Would you pray for them?\n\n' + listText +
+          '\n\nOpen the Prayer Box: ' + SITE + '/'
+      });
     });
 
     await sendMany(messages);

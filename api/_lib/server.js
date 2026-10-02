@@ -47,39 +47,87 @@ function escapeHtml(text) {
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
-// Wraps the body of an email in the Prayer Box layout, with the unsubscribe footer.
-function layout(bodyHtml, uid) {
-  return '<!DOCTYPE html><html><body style="margin:0;padding:24px 12px;background:#f6f5f0;">' +
-    '<div style="max-width:520px;margin:0 auto;padding:28px 24px;background:#fff;border:1.5px solid #000;border-radius:12px;' +
-    'font-family:Georgia,\'Times New Roman\',serif;color:#000;font-size:16px;line-height:1.55;">' +
-    '<p style="margin:0 0 18px;font-size:20px;">Prayer Box</p>' +
-    bodyHtml +
-    '<p style="margin:28px 0 0;padding-top:14px;border-top:1px solid #ddd;font-size:12px;color:#666;">' +
-    'You get this because you turned on email updates at Prayer Box. ' +
-    '<a href="' + SITE + '/dashboard.html" style="color:#666;">Change email settings</a> · ' +
-    '<a href="' + unsubscribeUrl(uid) + '" style="color:#666;">Unsubscribe</a></p>' +
-    '</div></body></html>';
+// ---- Email layout ----------------------------------------------------------------------
+// Clean and centred: the Prayer Box title, the hand-drawn letter, a big heading, a short
+// line of text, the message itself, one black button, and a small grey footer. Built with
+// tables and inline styles, which is what Gmail, Apple Mail and Outlook all display reliably.
+
+const SANS = "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif";
+const SERIF = "Georgia,'Times New Roman',serif";
+
+function layout(email, uid) {
+  return '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">' +
+    '<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light">' +
+    '<title>' + escapeHtml(email.heading) + '</title></head>' +
+    '<body style="margin:0;padding:0;background:#ffffff;">' +
+    // Hidden preview line shown next to the subject in the inbox list.
+    '<div style="display:none;max-height:0;overflow:hidden;opacity:0;">' + escapeHtml(email.preview || email.intro) + '</div>' +
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff;">' +
+    '<tr><td align="center" style="padding:40px 20px 32px;">' +
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:480px;">' +
+
+    // Title
+    '<tr><td align="center" style="padding:0 0 36px;">' +
+    '<img src="' + SITE + '/img/title-1.png" width="150" alt="Prayer Box" style="display:block;width:150px;height:auto;border:0;">' +
+    '</td></tr>' +
+
+    // Hand-drawn letter
+    '<tr><td align="center" style="padding:0 0 30px;">' +
+    '<img src="' + SITE + '/img/letter-1.png" width="92" alt="" style="display:block;width:92px;height:auto;border:0;">' +
+    '</td></tr>' +
+
+    // Heading + intro
+    '<tr><td align="center" style="padding:0 0 14px;font-family:' + SANS + ';font-size:28px;line-height:1.25;font-weight:700;color:#111111;">' +
+    escapeHtml(email.heading) + '</td></tr>' +
+    '<tr><td align="center" style="padding:0 12px 26px;font-family:' + SANS + ';font-size:18px;line-height:1.5;color:#222222;">' +
+    escapeHtml(email.intro) + '</td></tr>' +
+
+    // The message itself (a reply, or the list of prayers)
+    (email.bodyHtml ? '<tr><td style="padding:0 0 28px;">' + email.bodyHtml + '</td></tr>' : '') +
+
+    // Button
+    '<tr><td align="center" style="padding:0 0 40px;">' +
+    '<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>' +
+    '<td align="center" bgcolor="#111111" style="border-radius:10px;">' +
+    '<a href="' + email.buttonHref + '" style="display:inline-block;padding:15px 38px;font-family:' + SANS +
+    ';font-size:18px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:10px;">' +
+    escapeHtml(email.buttonLabel) + '</a></td></tr></table></td></tr>' +
+
+    // Footer
+    '<tr><td align="center" style="padding:0 16px;font-family:' + SANS + ';font-size:13px;line-height:1.6;color:#8a8a8a;">' +
+    'You\u2019re getting this because you turned on email updates at Prayer Box.<br>' +
+    '<a href="' + SITE + '/dashboard.html" style="color:#8a8a8a;">Email settings</a>' +
+    ' &nbsp;·&nbsp; <a href="' + unsubscribeUrl(uid) + '" style="color:#8a8a8a;">Unsubscribe</a>' +
+    '</td></tr>' +
+
+    '</table></td></tr></table></body></html>';
 }
 
-function button(href, label) {
-  return '<p style="margin:22px 0 0;"><a href="' + href + '" style="display:inline-block;padding:10px 18px;' +
-    'background:#000;color:#fff;border-radius:10px;text-decoration:none;">' + escapeHtml(label) + '</a></p>';
+// A soft grey card holding someone's words (a reply, or a prayer request).
+function card(innerHtml) {
+  return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">' +
+    '<tr><td style="padding:18px 20px;background:#f5f5f2;border-radius:12px;font-family:' + SERIF +
+    ';font-size:17px;line-height:1.55;color:#111111;">' + innerHtml + '</td></tr></table>';
 }
 
-function quote(text) {
-  return '<blockquote style="margin:12px 0;padding:10px 14px;border-left:3px solid #000;background:#f6f6f6;' +
-    'border-radius:0 8px 8px 0;white-space:pre-wrap;">' + escapeHtml(text) + '</blockquote>';
+function words(text) {
+  return '<span style="white-space:pre-wrap;">' + escapeHtml(text) + '</span>';
+}
+
+function byline(text) {
+  return '<div style="margin:0 0 6px;font-family:' + SANS + ';font-size:13px;color:#777777;">' + escapeHtml(text) + '</div>';
 }
 
 // One email object for Resend; `headers` adds one-click unsubscribe for mail apps.
-function message(to, uid, subject, bodyHtml, bodyText) {
+// email: { subject, heading, intro, preview?, bodyHtml, buttonHref, buttonLabel, text }
+function message(to, uid, email) {
   const unsub = unsubscribeUrl(uid);
   return {
     from: process.env.EMAIL_FROM,
     to: [to],
-    subject: subject,
-    html: layout(bodyHtml, uid),
-    text: bodyText + '\n\n—\nChange email settings: ' + SITE + '/dashboard.html\nUnsubscribe: ' + unsub,
+    subject: email.subject,
+    html: layout(email, uid),
+    text: email.text + '\n\n—\nEmail settings: ' + SITE + '/dashboard.html\nUnsubscribe: ' + unsub,
     headers: {
       'List-Unsubscribe': '<' + unsub + '>',
       'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
@@ -112,6 +160,6 @@ async function sendMany(msgs) {
 }
 
 module.exports = {
-  SITE, firebase, escapeHtml, quote, button, message, sendOne, sendMany,
+  SITE, firebase, escapeHtml, card, words, byline, message, sendOne, sendMany,
   unsubscribeUrl, validUnsubscribeToken
 };
