@@ -512,6 +512,37 @@
     });
   }
 
+  // ---- Email settings ------------------------------------------------------------------------
+
+  function startEmailSettings() {
+    var section = document.getElementById('dash-email');
+    var replies = document.getElementById('pref-replies');
+    var digest = document.getElementById('pref-digest');
+    var status = document.getElementById('dash-email-status');
+    PrayerDB.getEmailPrefs(user.uid).then(function (prefs) {
+      replies.checked = prefs.replies;
+      digest.checked = prefs.digest;
+      section.hidden = false;
+    }, function (err) {
+      console.error('Could not load email settings', err);
+    });
+    function save() {
+      replies.disabled = digest.disabled = true;
+      status.textContent = 'Saving…';
+      PrayerDB.setEmailPrefs(user.uid, { replies: replies.checked, digest: digest.checked }).then(function () {
+        status.textContent = replies.checked || digest.checked
+          ? 'Saved. Emails go to ' + (user.email || 'your account email') + '.'
+          : 'Saved. You won\u2019t get any emails.';
+      }, function (err) {
+        status.textContent = PrayerDB.errorMessage(err);
+      }).then(function () {
+        replies.disabled = digest.disabled = false;
+      });
+    }
+    replies.addEventListener('change', save);
+    digest.addEventListener('change', save);
+  }
+
   // Tabs: My prayers / My replies.
   var tabs = [document.getElementById('tab-prayers'), document.getElementById('tab-replies')];
   function selectTab(tab) {
@@ -682,6 +713,7 @@
     }
     user = person;
     if (person.displayName) myName = person.displayName.split(' ')[0];
+    startEmailSettings();
     PrayerDB.watchMyPrayers(user.uid, MAX_PRAYERS, onMyPrayers, function (err) {
       var denied = err && err.code === 'permission-denied';
       fail(denied

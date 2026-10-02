@@ -54,6 +54,21 @@ var PrayerDB = (function () {
     return db.collection('users').doc(uid).collection('replies').doc(prayerId + '_' + replyId);
   }
 
+  // Asks the email server (api/notify-reply.js) to tell the prayer's author about a new
+  // reply. Best effort: the reply is already saved, so a failure here is only logged.
+  function notifyAuthor(user, prayerId, replyId) {
+    user.getIdToken().then(function (token) {
+      return fetch('/api/notify-reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+        body: JSON.stringify({ prayerId: prayerId, replyId: replyId }),
+        keepalive: true
+      });
+    }).catch(function (err) {
+      console.warn('Could not ask for a reply email', err);
+    });
+  }
+
   return {
     available: !!db,
 
@@ -98,6 +113,8 @@ var PrayerDB = (function () {
       var batch = db.batch();
       batch.set(ref, { name: prayer.name, request: prayer.request, visibility: prayer.visibility, createdAt: now() });
       batch.set(myPrayerLink(user.uid, ref.id), { createdAt: now(), answered: false, seenReplies: 0 });
+      // Lets the email server tell the author about replies. Nobody can read it from the site.
+      batch.set(db.collection('owners').doc(ref.id), { uid: user.uid });
       return batch.commit().then(function () { return ref; });
     },
 
@@ -117,6 +134,7 @@ var PrayerDB = (function () {
         snap.docs.forEach(function (doc) { batch.delete(doc.ref); });
         batch.delete(prayerRef(prayerId));
         batch.delete(myPrayerLink(uid, prayerId));
+        batch.delete(db.collection('owners').doc(prayerId));
         return batch.commit();
       });
     },
@@ -206,7 +224,25 @@ var PrayerDB = (function () {
       var batch = db.batch();
       batch.set(ref, { name: reply.name, text: reply.text, createdAt: now() });
       batch.set(myReplyLink(user.uid, prayerId, ref.id), { prayerId: prayerId, replyId: ref.id, createdAt: now() });
-      return batch.commit();
+      return batch.commit().then(function () {
+        notifyAuthor(user, prayerId, ref.id);
+      });
+    },
+
+    // Email settings: { replies, digest }, both off until the person turns them on.
+    getEmailPrefs: function (uid) {
+      if (!db) return unavailable();
+      return db.collection('emailPrefs').doc(uid).get().then(function (doc) {
+        var d = doc.exists ? doc.data() : {};
+        return { replies: d.replies === true, digest: d.digest === true };
+      });
+    },
+
+    setEmailPrefs: function (uid, prefs) {
+      if (!db) return unavailable();
+      return db.collection('emailPrefs').doc(uid).set({
+        replies: !!prefs.replies, digest: !!prefs.digest, updatedAt: now()
+      });
     },
 
     updateReply: function (prayerId, replyId, reply) {

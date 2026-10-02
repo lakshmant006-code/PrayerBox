@@ -1,0 +1,11 @@
+{
+  "name": "prayer-box",
+  "private": true,
+  "description": "Prayer Box website (static pages) plus email functions in /api for Vercel.",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.7.0"
+  }
+}

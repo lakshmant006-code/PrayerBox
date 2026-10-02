@@ -15,6 +15,10 @@
       '<input class="login-input" id="login-email" name="email" type="email" autocomplete="email" required />' +
       '<label class="login-label" for="login-password">Password</label>' +
       '<input class="login-input" id="login-password" name="password" type="password" autocomplete="current-password" required />' +
+      '<label class="login-optin">' +
+        '<input type="checkbox" id="login-optin" />' +
+        '<span>Email me when someone replies to my prayers, and every 2 days with prayers to pray for</span>' +
+      '</label>' +
       '<p class="login-error" role="alert" hidden></p>' +
       '<div class="login-actions">' +
         '<button class="login-btn login-btn-google" type="button" data-action="google">' +
@@ -56,11 +60,23 @@
     form.setAttribute('aria-busy', busy ? 'true' : 'false');
   }
 
+  // If they ticked "Email me", turn both kinds of email on. Never blocks signing in.
+  function saveOptIn() {
+    var box = dialog.querySelector('#login-optin');
+    var user = window.firebase && firebase.auth && firebase.auth().currentUser;
+    if (!box.checked || !user || !window.PrayerDB) return Promise.resolve();
+    return PrayerDB.setEmailPrefs(user.uid, { replies: true, digest: true }).catch(function (err) {
+      console.warn('Could not save email settings', err);
+    });
+  }
+
   // `method` and `isNew` only describe the sign-in for analytics (see analytics.js).
   function attempt(signIn, method, isNew) {
     error.hidden = true;
     setBusy(true);
     signIn.then(function () {
+      return saveOptIn();
+    }).then(function () {
       PrayerAnalytics.eventThen(isNew ? 'sign_up' : 'login', { method: method }, function () {
         location.href = next;
       });

@@ -23,6 +23,19 @@
     </nav>
   </header>
 
+  <section class="dash-email" id="dash-email" aria-labelledby="dash-email-title" hidden>
+    <h2 class="dash-label" id="dash-email-title">EMAIL UPDATES</h2>
+    <label class="dash-switch">
+      <input type="checkbox" id="pref-replies" />
+      <span>Email me when someone replies to one of my prayers</span>
+    </label>
+    <label class="dash-switch">
+      <input type="checkbox" id="pref-digest" />
+      <span>Every 2 days, email me new prayers to pray for</span>
+    </label>
+    <p class="dash-email-status" id="dash-email-status" role="status"></p>
+  </section>
+
   <div class="dash-tabs" role="tablist" aria-label="Show">
     <button class="dash-tab" type="button" role="tab" id="tab-prayers" aria-controls="panel-prayers" aria-selected="true">My prayers</button>
     <button class="dash-tab" type="button" role="tab" id="tab-replies" aria-controls="panel-replies" aria-selected="false" tabindex="-1">My replies</button>

@@ -596,3 +596,42 @@
     font-size: 13px;
   }
 }
+
+/* ---- Email settings ---- */
+
+.dash-email {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 20px 0 4px;
+  padding: 16px 18px;
+  border: 1.5px solid #000;
+  border-radius: 12px;
+}
+
+.dash-switch {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 15px;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.dash-switch input {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin: 2px 0 0;
+  accent-color: #000;
+}
+
+.dash-email-status {
+  margin: 0;
+  font-size: 13px;
+  color: #555;
+}
+
+.dash-email-status:empty {
+  display: none;
+}

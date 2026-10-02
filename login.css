@@ -93,6 +93,25 @@
   box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.12);
 }
 
+.login-optin {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 2px 0 6px;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #3a3935;
+  cursor: pointer;
+}
+
+.login-optin input {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin: 1px 0 0;
+  accent-color: #1a1a1a;
+}
+
 .login-error {
   margin: -6px 0 0;
   font-size: 14px;

@@ -132,5 +132,37 @@ service cloud.firestore {
 
       allow delete: if signedIn() && request.auth.uid == uid;
     }
+
+    // ---- Email updates -------------------------------------------------------------------
+
+    // Each person's email choices (both off unless they turn them on). Only they can read
+    // or change them; the email server reads them with admin access.
+    match /emailPrefs/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow create, update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['replies', 'digest', 'updatedAt'])
+        && request.resource.data.replies is bool
+        && request.resource.data.digest is bool
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if signedIn() && request.auth.uid == uid;
+    }
+
+    // Who to email when a prayer gets a reply. Written together with the prayer, and
+    // nobody can read it from the site: only the email server can, with admin access.
+    // This keeps anonymous prayers anonymous.
+    match /owners/{prayerId} {
+      allow read: if false;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['uid'])
+        && request.resource.data.uid == request.auth.uid
+        && !exists(/databases/$(database)/documents/prayers/$(prayerId))
+        && existsAfter(/databases/$(database)/documents/prayers/$(prayerId));
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+
+    // Bookkeeping that only the email server touches (admin access skips these rules).
+    match /emailState/{doc=**} {
+      allow read, write: if false;
+    }
   }
 }
