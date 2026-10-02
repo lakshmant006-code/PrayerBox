@@ -11,11 +11,27 @@ const admin = require('firebase-admin');
 
 const SITE = 'https://www.prayerbox.site';
 
+// Reads the service-account JSON from FIREBASE_SERVICE_ACCOUNT. Forgiving about how it was
+// pasted: missing outer { } (easy to drop when copying), or base64-encoded.
+function serviceAccount() {
+  const raw = (process.env.FIREBASE_SERVICE_ACCOUNT || '').trim();
+  if (!raw) throw new Error('FIREBASE_SERVICE_ACCOUNT is not set');
+  const attempts = [raw, '{' + raw.replace(/^,|,$/g, '') + '}'];
+  if (!raw.includes('"')) {
+    try { attempts.push(Buffer.from(raw, 'base64').toString('utf8')); } catch (e) {}
+  }
+  for (const text of attempts) {
+    try {
+      const key = JSON.parse(text);
+      if (key && key.private_key && key.client_email) return key;
+    } catch (e) {}
+  }
+  throw new Error('FIREBASE_SERVICE_ACCOUNT is not the full JSON key file. Paste the whole file, from { to }.');
+}
+
 function firebase() {
   if (!admin.apps.length) {
-    const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
-    if (!raw) throw new Error('FIREBASE_SERVICE_ACCOUNT is not set');
-    admin.initializeApp({ credential: admin.credential.cert(JSON.parse(raw)) });
+    admin.initializeApp({ credential: admin.credential.cert(serviceAccount()) });
   }
   return admin;
 }
