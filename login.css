@@ -198,11 +198,22 @@
 }
 
 /* Log out, top-right corner of the home page (clear of the phone's notch and status bar) */
-.corner-log-out {
+.corner-nav {
   position: fixed;
   top: max(12px, env(safe-area-inset-top));
   right: max(12px, env(safe-area-inset-right));
   z-index: 2;
+  display: flex;
+  gap: 8px;
+}
+
+.corner-nav[hidden] {
+  display: none;
+}
+
+.corner-pill {
+  display: inline-flex;
+  align-items: center;
   min-height: 36px;
   padding: 6px 14px;
   border: 1px solid #d9d7cf;
@@ -211,23 +222,20 @@
   font-family: Georgia, "Times New Roman", serif;
   font-size: 14px;
   color: #1a1a1a;
+  text-decoration: none;
 }
 
-.corner-log-out:hover {
+.corner-pill:hover {
   border-color: #1a1a1a;
 }
 
-.corner-log-out:focus-visible {
+.corner-pill:focus-visible {
   outline: 2px solid #1a1a1a;
   outline-offset: 2px;
 }
 
-.corner-log-out[hidden] {
-  display: none;
-}
-
 @media (pointer: coarse) {
-  .corner-log-out {
+  .corner-pill {
     min-height: 44px;
   }
 }

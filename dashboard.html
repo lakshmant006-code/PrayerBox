@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta charset="utf-8" />
+<title>Prayer Box · My prayers</title>
+<link rel="stylesheet" href="globals.css">
+<link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+<main class="dash">
+  <header class="dash-header">
+    <img class="dash-mark" src="img/letter-1.png" alt="" width="46" height="52" />
+    <div class="dash-heading">
+      <h1 class="dash-title">My prayers</h1>
+      <p class="dash-sub" id="dash-sub">Follow the prayers you have dropped, see who replied, and mark the ones that were answered.</p>
+    </div>
+    <nav class="dash-links" aria-label="Page">
+      <a class="dash-link" href="index.html">&larr; Back to the box</a>
+      <a class="dash-link" href="prayer.html">Drop a prayer</a>
+      <button class="dash-link" type="button" id="log-out">Log out</button>
+    </nav>
+  </header>
+
+  <p class="dash-status" id="dash-status" role="status">Loading your prayers&hellip;</p>
+  <p class="dash-fatal" id="dash-fatal" role="alert" hidden></p>
+
+  <div id="dash-body" hidden>
+    <section class="dash-stats" aria-label="Summary">
+      <div class="dash-stat">
+        <span class="dash-stat-num" id="stat-total">0</span>
+        <span class="dash-stat-label">PRAYERS</span>
+      </div>
+      <div class="dash-stat">
+        <span class="dash-stat-num" id="stat-answered">0</span>
+        <span class="dash-stat-label">ANSWERED</span>
+      </div>
+      <div class="dash-stat">
+        <span class="dash-stat-num" id="stat-replies">0</span>
+        <span class="dash-stat-label">REPLIES</span>
+        <span class="dash-stat-new" id="stat-new" hidden></span>
+      </div>
+    </section>
+
+    <div class="dash-filters" role="group" aria-label="Show">
+      <button class="dash-filter" type="button" data-filter="all" aria-pressed="true">All</button>
+      <button class="dash-filter" type="button" data-filter="waiting" aria-pressed="false">Waiting</button>
+      <button class="dash-filter" type="button" data-filter="answered" aria-pressed="false">Answered</button>
+      <button class="dash-filter" type="button" data-filter="replied" aria-pressed="false">Has replies</button>
+    </div>
+
+    <ul class="dash-list" id="dash-list" aria-label="Your prayers"></ul>
+
+    <div class="dash-empty" id="dash-empty" hidden>
+      <p class="dash-empty-title" id="dash-empty-title"></p>
+      <p class="dash-empty-text" id="dash-empty-text"></p>
+      <a class="dash-cta" id="dash-empty-cta" href="prayer.html" hidden>Drop a prayer</a>
+    </div>
+  </div>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="auth.js"></script>
+<script src="db.js"></script>
+<script src="dashboard.js"></script>
+</body>
+</html>

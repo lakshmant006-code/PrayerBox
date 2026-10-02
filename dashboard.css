@@ -1,0 +1,458 @@
+/* "My prayers" dashboard: ink on paper, in the same Georgia / small-caps voice as the rest of the site. */
+
+.dash {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 32px 16px 64px;
+  font-family: Georgia, "Times New Roman", serif;
+  color: #000;
+}
+
+/* Our own display rules must never beat the hidden attribute. */
+.dash [hidden] {
+  display: none !important;
+}
+
+.dash-label,
+.dash-stat-label {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: #555;
+}
+
+/* ---- Header ---- */
+
+.dash-header {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 16px;
+  align-items: center;
+  margin-bottom: 28px;
+}
+
+.dash-mark {
+  width: 46px;
+  height: auto;
+}
+
+.dash-title {
+  font-size: 32px;
+  line-height: 1.1;
+  font-weight: 400;
+}
+
+.dash-sub {
+  margin: 6px 0 0;
+  max-width: 46ch;
+  font-size: 16px;
+  line-height: 1.45;
+  color: #444;
+}
+
+.dash-links {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.dash-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 6px 14px;
+  border: 1px solid #d9d7cf;
+  border-radius: 999px;
+  background: #fff;
+  font: inherit;
+  font-size: 14px;
+  color: #1a1a1a;
+  text-decoration: none;
+}
+
+.dash-link:hover {
+  border-color: #1a1a1a;
+}
+
+.dash-link:focus-visible,
+.dash-btn:focus-visible,
+.dash-filter:focus-visible,
+.dash-cta:focus-visible,
+.dash-textarea:focus-visible {
+  outline: 2px solid #000;
+  outline-offset: 2px;
+}
+
+/* ---- Status / errors ---- */
+
+.dash-status,
+.dash-fatal {
+  margin: 32px 0;
+  font-size: 16px;
+  color: #444;
+}
+
+.dash-fatal {
+  padding: 14px 16px;
+  border: 1.5px solid #000;
+  border-radius: 10px;
+  color: #000;
+}
+
+/* ---- Summary numbers ---- */
+
+.dash-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border: 1.5px solid #000;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.dash-stat {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 16px 16px 14px;
+}
+
+.dash-stat + .dash-stat {
+  border-left: 1.5px solid #000;
+}
+
+.dash-stat-num {
+  font-size: 36px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.dash-stat-new {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #000;
+  color: #fff;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* ---- Filters ---- */
+
+.dash-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 20px 0 16px;
+}
+
+.dash-filter {
+  min-height: 36px;
+  padding: 6px 14px;
+  border: 1.5px solid transparent;
+  border-radius: 999px;
+  font-size: 15px;
+  color: #444;
+}
+
+.dash-filter:hover {
+  border-color: #bbb;
+}
+
+.dash-filter[aria-pressed="true"] {
+  border-color: #000;
+  background: #000;
+  color: #fff;
+}
+
+/* ---- Prayer cards ---- */
+
+.dash-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dash-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 18px 16px;
+  border: 1.5px solid #000;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.dash-card.is-answered {
+  background: #f7f6f1;
+}
+
+.dash-card-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+
+.dash-date {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: #555;
+}
+
+.dash-chip,
+.dash-badge {
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.dash-chip {
+  border: 1px solid #999;
+  color: #444;
+}
+
+.dash-badge {
+  background: #000;
+  color: #fff;
+}
+
+.dash-request {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.dash-request.is-muted {
+  color: #777;
+  font-style: italic;
+}
+
+.dash-note {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 10px;
+  border-top: 1px dashed #999;
+}
+
+.dash-note-text {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.dash-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dash-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 6px 16px;
+  border: 1.5px solid #000;
+  border-radius: 999px;
+  background: #fff;
+  font-size: 15px;
+  color: #000;
+}
+
+.dash-btn:hover:not(:disabled) {
+  background: #f0efe9;
+}
+
+.dash-btn-strong {
+  background: #000;
+  color: #fff;
+}
+
+.dash-btn-strong:hover:not(:disabled) {
+  background: #222;
+}
+
+.dash-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.dash-new {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #000;
+  color: #fff;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* A "new" pill on a black button would vanish; invert it there. */
+.dash-btn-strong .dash-new {
+  background: #fff;
+  color: #000;
+}
+
+/* ---- Mark answered ---- */
+
+.dash-answer-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px dashed #999;
+}
+
+.dash-textarea {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px solid #000;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.dash-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ---- Replies ---- */
+
+.dash-replies {
+  padding-top: 12px;
+  border-top: 1px dashed #999;
+}
+
+.dash-reply-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dash-reply {
+  padding-left: 12px;
+  border-left: 2px solid #000;
+}
+
+.dash-reply-who {
+  margin: 0 0 2px;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: #555;
+}
+
+.dash-reply-body {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.dash-reply-empty {
+  margin: 0;
+  font-size: 15px;
+  color: #666;
+}
+
+.dash-card-error {
+  margin: 0;
+  font-size: 14px;
+  color: #a12020;
+}
+
+/* ---- Empty state ---- */
+
+.dash-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 28px 4px;
+}
+
+.dash-empty-title {
+  margin: 0;
+  font-size: 22px;
+}
+
+.dash-empty-text {
+  margin: 0;
+  max-width: 52ch;
+  font-size: 16px;
+  line-height: 1.5;
+  color: #444;
+}
+
+.dash-cta {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: 8px;
+  padding: 8px 22px;
+  border-radius: 999px;
+  background: #000;
+  color: #fff;
+  text-decoration: none;
+}
+
+/* ---- Small screens and touch ---- */
+
+@media (max-width: 480px) {
+  .dash-title {
+    font-size: 28px;
+  }
+  .dash-stat {
+    padding: 14px 12px 12px;
+  }
+  .dash-stat-num {
+    font-size: 30px;
+  }
+  .dash-stat-new {
+    position: static;
+    margin-top: 2px;
+  }
+}
+
+@media (pointer: coarse) {
+  .dash-link,
+  .dash-btn,
+  .dash-filter {
+    min-height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dash * {
+    transition: none !important;
+  }
+}

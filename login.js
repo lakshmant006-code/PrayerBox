@@ -40,6 +40,11 @@
   var buttons = dialog.querySelectorAll('.login-actions .login-btn');
   var next = 'prayer.html';
 
+  // ?login&next=dashboard.html sends the person there after signing in. Only our own
+  // pages are accepted, so this can't be used to bounce someone to another site.
+  var requestedNext = new URLSearchParams(location.search).get('next');
+  if (requestedNext === 'dashboard.html' || requestedNext === 'prayer.html') next = requestedNext;
+
   function showError(message, field) {
     error.textContent = message;
     error.hidden = false;
@@ -122,19 +127,31 @@
     if (returnTo) location.href = returnTo;
   });
 
-  // Signed-in visitors get a Log out button in the corner of the page.
+  // Signed-in visitors get "My prayers" and Log out buttons in the corner of the page.
+  var cornerNav = document.createElement('nav');
+  cornerNav.className = 'corner-nav';
+  cornerNav.setAttribute('aria-label', 'Your account');
+  cornerNav.hidden = true;
+
+  var dashboardLink = document.createElement('a');
+  dashboardLink.className = 'corner-pill';
+  dashboardLink.href = 'dashboard.html';
+  dashboardLink.textContent = 'My prayers';
+
   var logOutButton = document.createElement('button');
   logOutButton.type = 'button';
-  logOutButton.className = 'corner-log-out';
+  logOutButton.className = 'corner-pill corner-log-out';
   logOutButton.textContent = 'Log out';
-  logOutButton.hidden = true;
   logOutButton.addEventListener('click', function () {
     logOutButton.disabled = true;
     PrayerAuth.logOutAndGoHome();
   });
-  document.body.appendChild(logOutButton);
+
+  cornerNav.appendChild(dashboardLink);
+  cornerNav.appendChild(logOutButton);
+  document.body.appendChild(cornerNav);
   PrayerAuth.currentUser().then(function (user) {
-    logOutButton.hidden = !user;
+    cornerNav.hidden = !user;
   });
 
   // Lets other parts of the page ask for a sign-in, then come back to `returnTo`.

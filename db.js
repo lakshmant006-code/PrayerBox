@@ -56,14 +56,89 @@ var PrayerDB = (function () {
       });
     },
 
+    // Saves the prayer and, in the same write, a private link to it under the signed-in
+    // person's own account (users/{uid}/prayers). The public prayer carries no account id,
+    // so anonymous prayers stay anonymous; the link is what lets the owner find it again.
     addPrayer: function (prayer) {
       if (!db) return unavailable();
-      return db.collection('prayers').add({
+      var user = firebase.auth().currentUser;
+      var prayerRef = db.collection('prayers').doc();
+      var batch = db.batch();
+      var now = firebase.firestore.FieldValue.serverTimestamp();
+      batch.set(prayerRef, {
         name: prayer.name,
         request: prayer.request,
         visibility: prayer.visibility,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        createdAt: now
       });
+      if (user) {
+        batch.set(db.collection('users').doc(user.uid).collection('prayers').doc(prayerRef.id), {
+          createdAt: now,
+          answered: false,
+          seenReplies: 0
+        });
+      }
+      return batch.commit();
+    },
+
+    // Calls onChange(items) with the signed-in person's own prayers, newest first, now and on
+    // every change. Each item is { id, createdAt, answered, answeredAt, answerNote, seenReplies }.
+    // Returns a stop function.
+    watchMyPrayers: function (uid, limit, onChange, onError) {
+      if (!db) {
+        onChange([]);
+        return function () {};
+      }
+      return db.collection('users').doc(uid).collection('prayers')
+        .orderBy('createdAt', 'desc').limit(limit)
+        .onSnapshot(function (snap) {
+          onChange(snap.docs.map(function (doc) {
+            var d = doc.data({ serverTimestamps: 'estimate' });
+            return {
+              id: doc.id,
+              createdAt: isoTime(d.createdAt),
+              answered: d.answered === true,
+              answeredAt: d.answeredAt ? isoTime(d.answeredAt) : null,
+              answerNote: d.answerNote || '',
+              seenReplies: d.seenReplies || 0
+            };
+          }));
+        }, function (err) {
+          console.error('Could not load your prayers', err);
+          if (onError) onError(err);
+        });
+    },
+
+    // Reads one public prayer once. Resolves with null if it no longer exists.
+    getPrayer: function (id) {
+      if (!db) return unavailable();
+      return db.collection('prayers').doc(id).get().then(function (doc) {
+        return doc.exists ? toPrayer(doc) : null;
+      });
+    },
+
+    // Marks one of your prayers answered (with an optional note), or back to waiting.
+    setAnswered: function (uid, prayerId, answered, note) {
+      if (!db) return unavailable();
+      var ref = db.collection('users').doc(uid).collection('prayers').doc(prayerId);
+      if (!answered) {
+        return ref.update({
+          answered: false,
+          answeredAt: firebase.firestore.FieldValue.delete(),
+          answerNote: firebase.firestore.FieldValue.delete()
+        });
+      }
+      var data = { answered: true, answeredAt: firebase.firestore.FieldValue.serverTimestamp() };
+      if (note) data.answerNote = note;
+      else data.answerNote = firebase.firestore.FieldValue.delete();
+      return ref.update(data);
+    },
+
+    // Remembers how many replies you have read on a prayer, so new ones can be flagged.
+    markRepliesSeen: function (uid, prayerId, count) {
+      if (!db) return unavailable();
+      return db.collection('users').doc(uid).collection('prayers').doc(prayerId)
+        .update({ seenReplies: count });
     },
 
     // Calls onChange(replies) now and whenever a reply is added. Returns a stop function.

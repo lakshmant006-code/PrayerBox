@@ -4,8 +4,9 @@ rules_version = '2';
 // Firebase console > Firestore Database > Rules, then Publish.
 //
 // Anyone can read prayers and replies. Only signed-in people can post, posts are
-// checked for size and shape, and nothing can be edited or deleted from the site.
-// No account id is stored on a post, so anonymous posts stay anonymous.
+// checked for size and shape, and prayers and replies can't be edited or deleted.
+// No account id is stored on a post, so anonymous posts stay anonymous. The only
+// editable data is each person's own private "My prayers" list (see the bottom).
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -35,6 +36,40 @@ service cloud.firestore {
           && validText(request.resource.data.text, 1000)
           && request.resource.data.createdAt == request.time;
       }
+    }
+
+    // "My prayers" dashboard. Each signed-in person gets a private list that points at the
+    // prayers they dropped (the document id is the prayer's id). Only that person can read
+    // or change it, so a prayer posted anonymously can't be traced back to an account.
+    function validAnswerState(data) {
+      return data.answered is bool
+        && (data.answered == true
+          ? data.answeredAt == request.time
+          : !('answeredAt' in data))
+        && (!('answerNote' in data)
+          || (data.answerNote is string && data.answerNote.size() <= 280));
+    }
+
+    match /users/{uid}/prayers/{prayerId} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+
+      allow create: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['createdAt', 'answered', 'seenReplies'])
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.answered == false
+        && request.resource.data.seenReplies == 0;
+
+      // Two kinds of change: marking replies as read, or marking answered / waiting.
+      allow update: if request.auth != null && request.auth.uid == uid
+        && (
+          (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['seenReplies'])
+            && request.resource.data.seenReplies is int
+            && request.resource.data.seenReplies >= 0)
+          ||
+          (request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['answered', 'answeredAt', 'answerNote'])
+            && validAnswerState(request.resource.data))
+        );
     }
   }
 }
