@@ -7,6 +7,10 @@ var PrayerDB = (function () {
     if (window.firebase && firebase.apps.length && firebase.firestore) db = firebase.firestore();
   } catch (e) {}
 
+  function now() {
+    return firebase.firestore.FieldValue.serverTimestamp();
+  }
+
   function isoTime(value) {
     return value ? value.toDate().toISOString() : new Date().toISOString();
   }
@@ -14,23 +18,47 @@ var PrayerDB = (function () {
   function toPrayer(doc) {
     // 'estimate' gives a just-posted prayer a time before the server confirms it.
     var d = doc.data({ serverTimestamps: 'estimate' });
-    return { id: doc.id, name: d.name, request: d.request, visibility: d.visibility, createdAt: isoTime(d.createdAt) };
+    return {
+      id: doc.id, name: d.name, request: d.request, visibility: d.visibility,
+      createdAt: isoTime(d.createdAt), edited: !!d.editedAt
+    };
   }
 
   function toReply(doc) {
     var d = doc.data({ serverTimestamps: 'estimate' });
-    return { id: doc.id, name: d.name, text: d.text, createdAt: isoTime(d.createdAt) };
+    return { id: doc.id, name: d.name, text: d.text, createdAt: isoTime(d.createdAt), edited: !!d.editedAt };
   }
 
   function unavailable() {
     return Promise.reject({ code: 'db/unavailable' });
   }
 
+  function signedOut() {
+    return Promise.reject({ code: 'permission-denied' });
+  }
+
+  function prayerRef(id) {
+    return db.collection('prayers').doc(id);
+  }
+
+  function replyRef(prayerId, replyId) {
+    return prayerRef(prayerId).collection('replies').doc(replyId);
+  }
+
+  // The signed-in person's private area: users/{uid}/prayers and users/{uid}/replies.
+  function myPrayerLink(uid, prayerId) {
+    return db.collection('users').doc(uid).collection('prayers').doc(prayerId);
+  }
+
+  function myReplyLink(uid, prayerId, replyId) {
+    return db.collection('users').doc(uid).collection('replies').doc(prayerId + '_' + replyId);
+  }
+
   return {
     available: !!db,
 
-    // Calls onInitial(prayers) once with the newest `limit` prayers, then onAdded(prayer)
-    // and onRemoved(id) as the list changes. Returns a function that stops watching.
+    // Calls onInitial(prayers) once with the newest `limit` prayers, then onAdded(prayer),
+    // onChanged(prayer) and onRemoved(id) as the list changes. Returns a stop function.
     watchPrayers: function (limit, handlers) {
       if (!db) {
         handlers.onInitial([]);
@@ -45,6 +73,7 @@ var PrayerDB = (function () {
         }
         snap.docChanges().forEach(function (change) {
           if (change.type === 'added') handlers.onAdded(toPrayer(change.doc));
+          if (change.type === 'modified' && handlers.onChanged) handlers.onChanged(toPrayer(change.doc));
           if (change.type === 'removed') handlers.onRemoved(change.doc.id);
         });
       }, function (err) {
@@ -56,29 +85,39 @@ var PrayerDB = (function () {
       });
     },
 
-    // Saves the prayer, then a private link to it under the signed-in person's own account
-    // (users/{uid}/prayers). The public prayer carries no account id, so anonymous prayers
-    // stay anonymous; the link is what lets the owner find it again on their dashboard.
-    // The link is saved second and on its own: if it can't be written (for example the
-    // database rules haven't been updated yet) the prayer is still posted.
+    // Saves the prayer together with a private link to it under the signed-in person's own
+    // account (users/{uid}/prayers). The public prayer carries no account id, so anonymous
+    // prayers stay anonymous; the link is what lets the owner find it on their dashboard and
+    // edit or delete it. Both are written in one batch: the rules only accept a link that is
+    // created along with its prayer, so nobody can claim someone else's.
     addPrayer: function (prayer) {
       if (!db) return unavailable();
       var user = firebase.auth().currentUser;
-      var prayerRef = db.collection('prayers').doc();
-      return prayerRef.set({
-        name: prayer.name,
-        request: prayer.request,
-        visibility: prayer.visibility,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      }).then(function () {
-        if (!user) return;
-        return db.collection('users').doc(user.uid).collection('prayers').doc(prayerRef.id).set({
-          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-          answered: false,
-          seenReplies: 0
-        }).catch(function (err) {
-          console.error('Prayer posted, but could not add it to your My prayers list', err);
-        });
+      if (!user) return signedOut();
+      var ref = db.collection('prayers').doc();
+      var batch = db.batch();
+      batch.set(ref, { name: prayer.name, request: prayer.request, visibility: prayer.visibility, createdAt: now() });
+      batch.set(myPrayerLink(user.uid, ref.id), { createdAt: now(), answered: false, seenReplies: 0 });
+      return batch.commit().then(function () { return ref; });
+    },
+
+    // Edits one of your prayers. Its letter in the box updates for everyone.
+    updatePrayer: function (prayerId, prayer) {
+      if (!db) return unavailable();
+      return prayerRef(prayerId).update({
+        name: prayer.name, request: prayer.request, visibility: prayer.visibility, editedAt: now()
+      });
+    },
+
+    // Deletes one of your prayers, the replies on it, and your link to it.
+    deletePrayer: function (uid, prayerId) {
+      if (!db) return unavailable();
+      return prayerRef(prayerId).collection('replies').get().then(function (snap) {
+        var batch = db.batch();
+        snap.docs.forEach(function (doc) { batch.delete(doc.ref); });
+        batch.delete(prayerRef(prayerId));
+        batch.delete(myPrayerLink(uid, prayerId));
+        return batch.commit();
       });
     },
 
@@ -157,13 +196,54 @@ var PrayerDB = (function () {
         });
     },
 
+    // Saves the reply together with a private link to it (users/{uid}/replies), so the
+    // author can find, edit and delete it later.
     addReply: function (prayerId, reply) {
       if (!db) return unavailable();
-      return db.collection('prayers').doc(prayerId).collection('replies').add({
-        name: reply.name,
-        text: reply.text,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
+      var user = firebase.auth().currentUser;
+      if (!user) return signedOut();
+      var ref = prayerRef(prayerId).collection('replies').doc();
+      var batch = db.batch();
+      batch.set(ref, { name: reply.name, text: reply.text, createdAt: now() });
+      batch.set(myReplyLink(user.uid, prayerId, ref.id), { prayerId: prayerId, replyId: ref.id, createdAt: now() });
+      return batch.commit();
+    },
+
+    updateReply: function (prayerId, replyId, reply) {
+      if (!db) return unavailable();
+      return replyRef(prayerId, replyId).update({ name: reply.name, text: reply.text, editedAt: now() });
+    },
+
+    deleteReply: function (uid, prayerId, replyId) {
+      if (!db) return unavailable();
+      var batch = db.batch();
+      batch.delete(replyRef(prayerId, replyId));
+      batch.delete(myReplyLink(uid, prayerId, replyId));
+      return batch.commit();
+    },
+
+    // The replies you've written, newest first, each with the prayer it answers. Replies
+    // whose prayer (or the reply itself) was since deleted are skipped and tidied away.
+    myReplies: function (uid) {
+      if (!db) return unavailable();
+      return db.collection('users').doc(uid).collection('replies').orderBy('createdAt', 'desc').get()
+        .then(function (links) {
+          return Promise.all(links.docs.map(function (link) {
+            var l = link.data();
+            return Promise.all([replyRef(l.prayerId, l.replyId).get(), prayerRef(l.prayerId).get()])
+              .then(function (docs) {
+                if (!docs[0].exists || !docs[1].exists) {
+                  link.ref.delete().catch(function () {});
+                  return null;
+                }
+                var reply = toReply(docs[0]);
+                reply.prayerId = l.prayerId;
+                reply.prayer = toPrayer(docs[1]);
+                return reply;
+              });
+          }));
+        })
+        .then(function (replies) { return replies.filter(Boolean); });
     },
 
     errorMessage: function (err) {

@@ -4,6 +4,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta charset="utf-8" />
 <title>Prayer Box · Request</title>
+<script src="analytics.js"></script>
 <link rel="stylesheet" href="globals.css">
 <link rel="stylesheet" href="prayer.css">
 </head>
@@ -95,7 +96,9 @@
       request: request,
       visibility: data.get('visibility')
     }).then(function () {
-      location.href = 'index.html';
+      PrayerAnalytics.eventThen('prayer_submitted', { visibility: data.get('visibility') }, function () {
+        location.href = 'index.html';
+      });
     }, function (err) {
       submit.disabled = false;
       error.textContent = PrayerDB.errorMessage(err);

@@ -456,3 +456,143 @@
     transition: none !important;
   }
 }
+
+/* ---- My prayers / My replies tabs ---- */
+
+.dash-tabs {
+  display: flex;
+  gap: 4px;
+  margin: 20px 0 4px;
+  padding: 4px;
+  border: 1.5px solid #000;
+  border-radius: 999px;
+}
+
+.dash-tab {
+  flex: 1;
+  min-height: 40px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 15px;
+  color: #000;
+}
+
+.dash-tab[aria-selected="true"] {
+  background: #000;
+  color: #fff;
+}
+
+.dash-tab:focus-visible {
+  outline: 2px solid #000;
+  outline-offset: 3px;
+}
+
+/* ---- Edit / delete ---- */
+
+.dash-btn-danger {
+  border-color: #b3261e;
+  color: #b3261e;
+}
+
+.dash-card.is-busy {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.dash-edit-slot:empty {
+  display: none;
+}
+
+.dash-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 4px 0 8px;
+}
+
+.dash-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px solid #000;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 16px; /* 16px keeps iPhone from zooming in */
+}
+
+.dash-input:focus-visible {
+  outline: 2px solid #000;
+  outline-offset: 2px;
+}
+
+.dash-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  padding: 4px;
+  border: 1.5px solid #000;
+  border-radius: 24px;
+}
+
+.dash-toggle label {
+  position: relative;
+  flex: 1 1 auto;
+  cursor: pointer;
+}
+
+.dash-toggle input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.dash-toggle span {
+  display: block;
+  padding: 8px 10px;
+  border-radius: 999px;
+  text-align: center;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.dash-toggle input:checked + span {
+  background: #000;
+  color: #fff;
+}
+
+.dash-toggle input:focus-visible + span {
+  outline: 2px solid #000;
+  outline-offset: 3px;
+}
+
+.dash-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.dash-reply-context {
+  margin: 0;
+  font-size: 14px;
+  color: #555;
+}
+
+.dash-reply-context q {
+  font-style: italic;
+}
+
+@media (pointer: coarse) {
+  .dash-tab {
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 600px) {
+  .dash-toggle span {
+    padding: 8px 6px;
+    font-size: 13px;
+  }
+}

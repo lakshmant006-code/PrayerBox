@@ -57,6 +57,7 @@
     replyError.hidden = true;
     replySend.disabled = true;
     PrayerDB.addReply(currentPrayer.id, { name: anonymous ? 'Anonymous' : name, text: text }).then(function () {
+      PrayerAnalytics.event('reply_sent', { anonymous: anonymous });
       replySend.disabled = false;
       replyText.value = '';
       if (!anonymous) {
@@ -349,11 +350,26 @@
     updateEmpty();
   }
 
+  // Someone edited their prayer: update its letter, and the note if it's open.
+  function changeLive(prayer) {
+    var el = byId[prayer.id];
+    if (!el) return;
+    Object.assign(el.prayer, prayer);
+    el.querySelector('.text-wrapper').textContent = prayer.name;
+    el.querySelector('.letter-open').setAttribute('aria-label', 'Read prayer from ' + prayer.name);
+    if (note.open && currentPrayer === el.prayer) {
+      document.getElementById('note-name').textContent = prayer.name;
+      document.getElementById('note-request').textContent = prayer.request;
+    }
+  }
+
   // The box shows the newest prayers that fit on screen; as new ones arrive, the oldest leave.
+  // Deleted prayers leave the same way.
   function removeLive(id) {
     var el = byId[id];
     if (!el) return;
     delete byId[id];
+    if (note.open && currentPrayer === el.prayer) note.close();
     gravity.remove(el);
     updateEmpty();
   }
@@ -368,6 +384,7 @@
         gravity = startGravity();
       },
       onAdded: addLive,
+      onChanged: changeLive,
       onRemoved: removeLive
     });
   }

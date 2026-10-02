@@ -56,11 +56,14 @@
     form.setAttribute('aria-busy', busy ? 'true' : 'false');
   }
 
-  function attempt(signIn) {
+  // `method` and `isNew` only describe the sign-in for analytics (see analytics.js).
+  function attempt(signIn, method, isNew) {
     error.hidden = true;
     setBusy(true);
     signIn.then(function () {
-      location.href = next;
+      PrayerAnalytics.eventThen(isNew ? 'sign_up' : 'login', { method: method }, function () {
+        location.href = next;
+      });
     }, function (err) {
       setBusy(false);
       showError(PrayerAuth.errorMessage(err));
@@ -78,11 +81,11 @@
     var register = e.submitter && e.submitter.getAttribute('data-action') === 'register';
     attempt(register
       ? PrayerAuth.register(email.value.trim(), password.value)
-      : PrayerAuth.logIn(email.value.trim(), password.value));
+      : PrayerAuth.logIn(email.value.trim(), password.value), 'email', register);
   });
 
   dialog.querySelector('[data-action="google"]').addEventListener('click', function () {
-    attempt(PrayerAuth.google(next));
+    attempt(PrayerAuth.google(next), 'google', false);
   });
 
   dialog.querySelector('.login-close').addEventListener('click', function () { dialog.close(); });

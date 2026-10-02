@@ -77,6 +77,14 @@
     r.answerBtn.type = 'button';
     actions.appendChild(r.repliesBtn);
     actions.appendChild(r.answerBtn);
+    r.editBtn = make('button', 'dash-btn', 'Edit');
+    r.editBtn.type = 'button';
+    r.deleteBtn = make('button', 'dash-btn dash-btn-danger', 'Delete');
+    r.deleteBtn.type = 'button';
+    actions.appendChild(r.editBtn);
+    actions.appendChild(r.deleteBtn);
+    r.actions = actions;
+    r.editSlot = make('div', 'dash-edit-slot');
 
     r.form = make('form', 'dash-answer-form');
     r.form.hidden = true;
@@ -112,6 +120,7 @@
 
     li.appendChild(top);
     li.appendChild(r.request);
+    li.appendChild(r.editSlot);
     li.appendChild(r.noteWrap);
     li.appendChild(actions);
     li.appendChild(r.form);
@@ -123,6 +132,8 @@
     r.repliesBtn.setAttribute('aria-controls', repliesId);
 
     r.repliesBtn.addEventListener('click', function () { toggleReplies(rec); });
+    r.editBtn.addEventListener('click', function () { startEditPrayer(rec); });
+    r.deleteBtn.addEventListener('click', function () { deletePrayer(rec); });
     r.answerBtn.addEventListener('click', function () { onAnswerButton(rec); });
     r.cancel.addEventListener('click', function () { closeAnswerForm(rec); });
     r.form.addEventListener('submit', function (e) {
@@ -143,7 +154,7 @@
     list.textContent = '';
     rec.replies.forEach(function (reply) {
       var li = make('li', 'dash-reply');
-      li.appendChild(make('p', 'dash-reply-who', reply.name + ' · ' + formatDate(reply.createdAt)));
+      li.appendChild(make('p', 'dash-reply-who', reply.name + ' · ' + formatDate(reply.createdAt) + (reply.edited ? ' · edited' : '')));
       li.appendChild(make('p', 'dash-reply-body', reply.text));
       list.appendChild(li);
     });
@@ -160,7 +171,7 @@
     if (rec.prayerState === 'ready') {
       r.request.textContent = rec.prayer.request;
       r.request.classList.remove('is-muted');
-      r.chip.textContent = rec.prayer.visibility === 'public' ? 'Public' : 'Anonymous';
+      r.chip.textContent = (rec.prayer.visibility === 'public' ? 'Public' : 'Anonymous') + (rec.prayer.edited ? ' · edited' : '');
       r.chip.hidden = false;
     } else {
       r.request.textContent = rec.prayerState === 'loading'
@@ -183,6 +194,10 @@
     r.answerBtn.textContent = answered ? 'Mark as still waiting' : 'Mark as answered';
     r.answerBtn.classList.toggle('dash-btn-strong', !answered);
     r.answerBtn.hidden = rec.ui.answering;
+    var canChange = rec.prayerState === 'ready' && !rec.ui.editing;
+    r.editBtn.hidden = !canChange || rec.ui.answering;
+    r.deleteBtn.hidden = rec.prayerState === 'loading' || rec.ui.editing;
+    r.request.hidden = rec.ui.editing;
 
     var count = rec.replies.length;
     r.repliesLabel.textContent = 'Replies (' + count + ')';
@@ -266,6 +281,257 @@
     rec.refs.save.disabled = busy;
     rec.li.setAttribute('aria-busy', busy ? 'true' : 'false');
   }
+
+  // ---- Edit / delete ------------------------------------------------------------------------
+
+  var myName = '';
+
+  // An inline editor: the text, a "with my name / anonymously" switch and a name box.
+  // opts: text, maxLength, textLabel, anonymous, name, namedLabel, anonymousLabel,
+  //       onSave(values) -> Promise, onCancel().
+  function buildEditor(opts) {
+    var form = make('form', 'dash-editor');
+    var text = make('textarea', 'dash-textarea');
+    text.value = opts.text;
+    text.maxLength = opts.maxLength;
+    text.rows = 4;
+    text.required = true;
+    text.setAttribute('aria-label', opts.textLabel);
+
+    var group = 'as-' + Math.random().toString(36).slice(2);
+    var toggle = make('fieldset', 'dash-toggle');
+    toggle.appendChild(make('legend', 'dash-visually-hidden', 'Post as'));
+    [['name', opts.namedLabel], ['anonymous', opts.anonymousLabel]].forEach(function (option) {
+      var label = make('label');
+      var input = make('input');
+      input.type = 'radio';
+      input.name = group;
+      input.value = option[0];
+      input.checked = (option[0] === 'anonymous') === opts.anonymous;
+      label.appendChild(input);
+      label.appendChild(make('span', '', option[1]));
+      toggle.appendChild(label);
+    });
+
+    var name = make('input', 'dash-input');
+    name.type = 'text';
+    name.maxLength = 40;
+    name.placeholder = 'Your name';
+    name.autocomplete = 'given-name';
+    name.setAttribute('aria-label', 'Your name');
+    name.value = opts.name || myName;
+
+    function isAnonymous() {
+      return form.querySelector('input[name="' + group + '"]:checked').value === 'anonymous';
+    }
+    function syncName() { name.hidden = isAnonymous(); }
+    toggle.addEventListener('change', syncName);
+    syncName();
+
+    var error = make('p', 'dash-card-error');
+    error.setAttribute('role', 'alert');
+    error.hidden = true;
+
+    var actions = make('div', 'dash-form-actions');
+    var save = make('button', 'dash-btn dash-btn-strong', 'Save');
+    save.type = 'submit';
+    var cancel = make('button', 'dash-btn', 'Cancel');
+    cancel.type = 'button';
+    cancel.addEventListener('click', function () { opts.onCancel(); });
+    actions.appendChild(save);
+    actions.appendChild(cancel);
+
+    form.appendChild(text);
+    form.appendChild(toggle);
+    form.appendChild(name);
+    form.appendChild(error);
+    form.appendChild(actions);
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var value = text.value.trim();
+      if (!value) return text.focus();
+      var anonymous = isAnonymous();
+      var who = name.value.trim();
+      if (!anonymous && !who) return name.focus();
+      error.hidden = true;
+      save.disabled = cancel.disabled = true;
+      opts.onSave({ text: value, anonymous: anonymous, name: anonymous ? 'Anonymous' : who }).catch(function (err) {
+        save.disabled = cancel.disabled = false;
+        error.textContent = PrayerDB.errorMessage(err);
+        error.hidden = false;
+      });
+    });
+
+    setTimeout(function () { text.focus(); }, 0);
+    return form;
+  }
+
+  function startEditPrayer(rec) {
+    if (rec.prayerState !== 'ready') return;
+    showCardError(rec, '');
+    rec.ui.editing = true;
+    rec.refs.actions.hidden = true;
+    var prayer = rec.prayer;
+    function finish() {
+      rec.ui.editing = false;
+      rec.refs.editSlot.textContent = '';
+      rec.refs.actions.hidden = false;
+      updateCard(rec);
+      rec.refs.editBtn.focus();
+    }
+    rec.refs.editSlot.appendChild(buildEditor({
+      text: prayer.request,
+      maxLength: 2000,
+      textLabel: 'Your prayer request',
+      anonymous: prayer.visibility === 'anonymous',
+      name: prayer.visibility === 'public' ? prayer.name : '',
+      namedLabel: 'Public request',
+      anonymousLabel: 'Anonymous request',
+      onCancel: finish,
+      onSave: function (v) {
+        var changes = { name: v.name, request: v.text, visibility: v.anonymous ? 'anonymous' : 'public' };
+        return PrayerDB.updatePrayer(rec.id, changes).then(function () {
+          prayer.name = changes.name;
+          prayer.request = changes.request;
+          prayer.visibility = changes.visibility;
+          prayer.edited = true;
+          finish();
+        });
+      }
+    }));
+    updateCard(rec);
+  }
+
+  function deletePrayer(rec) {
+    if (!window.confirm('Delete this prayer and the replies on it? This can\u2019t be undone.')) return;
+    showCardError(rec, '');
+    rec.li.setAttribute('aria-busy', 'true');
+    rec.li.classList.add('is-busy');
+    // Removing your link to it also removes the card (the list is live).
+    PrayerDB.deletePrayer(user.uid, rec.id).catch(function (err) {
+      rec.li.removeAttribute('aria-busy');
+      rec.li.classList.remove('is-busy');
+      showCardError(rec, PrayerDB.errorMessage(err));
+    });
+  }
+
+  // ---- My replies tab -----------------------------------------------------------------------
+
+  var repliesList = document.getElementById('my-replies');
+  var repliesStatus = document.getElementById('replies-status');
+  var repliesLoaded = false;
+
+  function refreshRepliesEmpty() {
+    if (repliesList.children.length) return;
+    repliesStatus.textContent = 'You haven\u2019t replied to a prayer yet. Replies you send from now on will show up here.';
+    repliesStatus.hidden = false;
+  }
+
+  function renderMyReply(li, reply) {
+    li.textContent = '';
+    var top = make('div', 'dash-card-top');
+    top.appendChild(make('span', 'dash-date', formatDate(reply.createdAt)));
+    top.appendChild(make('span', 'dash-chip', (reply.name === 'Anonymous' ? 'Anonymous' : 'As ' + reply.name) + (reply.edited ? ' · edited' : '')));
+    li.appendChild(top);
+
+    var context = make('p', 'dash-reply-context');
+    context.appendChild(document.createTextNode('On ' + reply.prayer.name + '\u2019s prayer: '));
+    var excerpt = reply.prayer.request.length > 140 ? reply.prayer.request.slice(0, 140) + '\u2026' : reply.prayer.request;
+    context.appendChild(make('q', '', excerpt));
+    li.appendChild(context);
+
+    li.appendChild(make('p', 'dash-request', reply.text));
+
+    var error = make('p', 'dash-card-error');
+    error.setAttribute('role', 'alert');
+    error.hidden = true;
+
+    var actions = make('div', 'dash-actions');
+    var editBtn = make('button', 'dash-btn', 'Edit');
+    editBtn.type = 'button';
+    var deleteBtn = make('button', 'dash-btn dash-btn-danger', 'Delete');
+    deleteBtn.type = 'button';
+    actions.appendChild(editBtn);
+    actions.appendChild(deleteBtn);
+    li.appendChild(actions);
+    li.appendChild(error);
+
+    editBtn.addEventListener('click', function () {
+      li.textContent = '';
+      li.appendChild(make('p', 'dash-label', 'EDITING YOUR REPLY'));
+      li.appendChild(buildEditor({
+        text: reply.text,
+        maxLength: 1000,
+        textLabel: 'Your reply',
+        anonymous: reply.name === 'Anonymous',
+        name: reply.name === 'Anonymous' ? '' : reply.name,
+        namedLabel: 'Reply with my name',
+        anonymousLabel: 'Reply anonymously',
+        onCancel: function () { renderMyReply(li, reply); },
+        onSave: function (v) {
+          return PrayerDB.updateReply(reply.prayerId, reply.id, { name: v.name, text: v.text }).then(function () {
+            reply.name = v.name;
+            reply.text = v.text;
+            reply.edited = true;
+            renderMyReply(li, reply);
+          });
+        }
+      }));
+    });
+
+    deleteBtn.addEventListener('click', function () {
+      if (!window.confirm('Delete this reply? This can\u2019t be undone.')) return;
+      li.classList.add('is-busy');
+      PrayerDB.deleteReply(user.uid, reply.prayerId, reply.id).then(function () {
+        li.remove();
+        refreshRepliesEmpty();
+      }, function (err) {
+        li.classList.remove('is-busy');
+        error.textContent = PrayerDB.errorMessage(err);
+        error.hidden = false;
+      });
+    });
+  }
+
+  function loadMyReplies() {
+    if (repliesLoaded || !user) return;
+    repliesLoaded = true;
+    PrayerDB.myReplies(user.uid).then(function (replies) {
+      repliesStatus.hidden = replies.length > 0;
+      replies.forEach(function (reply) {
+        var li = make('li', 'dash-card');
+        renderMyReply(li, reply);
+        repliesList.appendChild(li);
+      });
+      refreshRepliesEmpty();
+    }, function (err) {
+      repliesLoaded = false;
+      console.error('Could not load your replies', err);
+      repliesStatus.textContent = 'Couldn\u2019t load your replies. Check your connection and try again.';
+    });
+  }
+
+  // Tabs: My prayers / My replies.
+  var tabs = [document.getElementById('tab-prayers'), document.getElementById('tab-replies')];
+  function selectTab(tab) {
+    tabs.forEach(function (t) {
+      var on = t === tab;
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+      t.tabIndex = on ? 0 : -1;
+      document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+    });
+    if (tab.id === 'tab-replies') loadMyReplies();
+  }
+  tabs.forEach(function (t, i) {
+    t.addEventListener('click', function () { selectTab(t); });
+    t.addEventListener('keydown', function (e) {
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      var other = tabs[(i + 1) % tabs.length];
+      selectTab(other);
+      other.focus();
+    });
+  });
 
   // ---- Filters, stats, empty states ------------------------------------------------------------
 
@@ -415,6 +681,7 @@
       return fail('The dashboard needs the live prayer box, which isn’t connected right now.');
     }
     user = person;
+    if (person.displayName) myName = person.displayName.split(' ')[0];
     PrayerDB.watchMyPrayers(user.uid, MAX_PRAYERS, onMyPrayers, function (err) {
       var denied = err && err.code === 'permission-denied';
       fail(denied

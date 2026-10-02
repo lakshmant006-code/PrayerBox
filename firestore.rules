@@ -3,12 +3,17 @@ rules_version = '2';
 // Security rules for the Prayer Box database. Paste these into
 // Firebase console > Firestore Database > Rules, then Publish.
 //
-// Anyone can read prayers and replies. Only signed-in people can post, posts are
-// checked for size and shape, and prayers and replies can't be edited or deleted.
-// No account id is stored on a post, so anonymous posts stay anonymous. The only
-// editable data is each person's own private "My prayers" list (see the bottom).
+// Anyone can read prayers and replies. Only signed-in people can post, and posts are
+// checked for size and shape. No account id is stored on a post, so anonymous posts stay
+// anonymous. Who wrote what lives in each person's private area (users/{uid}/...), which
+// only they can read: that's what powers "My prayers", and it's what lets the author, and
+// only the author, edit or delete their own prayers and replies.
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
 
     function validName(data) {
       return data.name is string && data.name.size() > 0 && data.name.size() <= 40;
@@ -18,29 +23,66 @@ service cloud.firestore {
       return value is string && value.size() > 0 && value.size() <= max;
     }
 
+    function validPrayer(data) {
+      return validName(data)
+        && validText(data.request, 2000)
+        && data.visibility in ['anonymous', 'public']
+        && (data.visibility == 'public' || data.name == 'Anonymous');
+    }
+
+    function validReply(data) {
+      return validName(data) && validText(data.text, 1000);
+    }
+
+    function ownsPrayer(prayerId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid)/prayers/$(prayerId));
+    }
+
+    function ownsReply(prayerId, replyId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid)/replies/$(prayerId + '_' + replyId));
+    }
+
     match /prayers/{prayerId} {
       allow read: if true;
-      allow create: if request.auth != null
+
+      allow create: if signedIn()
         && request.resource.data.keys().hasOnly(['name', 'request', 'visibility', 'createdAt'])
-        && validName(request.resource.data)
-        && validText(request.resource.data.request, 2000)
-        && request.resource.data.visibility in ['anonymous', 'public']
-        && (request.resource.data.visibility == 'public' || request.resource.data.name == 'Anonymous')
+        && validPrayer(request.resource.data)
         && request.resource.data.createdAt == request.time;
+
+      allow update: if ownsPrayer(prayerId)
+        && request.resource.data.keys().hasOnly(['name', 'request', 'visibility', 'createdAt', 'editedAt'])
+        && validPrayer(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.editedAt == request.time;
+
+      allow delete: if ownsPrayer(prayerId);
 
       match /replies/{replyId} {
         allow read: if true;
-        allow create: if request.auth != null
+
+        allow create: if signedIn()
           && request.resource.data.keys().hasOnly(['name', 'text', 'createdAt'])
-          && validName(request.resource.data)
-          && validText(request.resource.data.text, 1000)
+          && validReply(request.resource.data)
           && request.resource.data.createdAt == request.time;
+
+        allow update: if ownsReply(prayerId, replyId)
+          && request.resource.data.keys().hasOnly(['name', 'text', 'createdAt', 'editedAt'])
+          && validReply(request.resource.data)
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.editedAt == request.time;
+
+        // A prayer's author can also clear its replies when deleting the prayer.
+        allow delete: if ownsReply(prayerId, replyId) || ownsPrayer(prayerId);
       }
     }
 
-    // "My prayers" dashboard. Each signed-in person gets a private list that points at the
-    // prayers they dropped (the document id is the prayer's id). Only that person can read
-    // or change it, so a prayer posted anonymously can't be traced back to an account.
+    // ---- Each person's private area ------------------------------------------------------
+
+    // "My prayers": one entry per prayer they dropped (the document id is the prayer's id),
+    // with answered / seen-replies state for the dashboard.
     function validAnswerState(data) {
       return data.answered is bool
         && (data.answered == true
@@ -51,16 +93,19 @@ service cloud.firestore {
     }
 
     match /users/{uid}/prayers/{prayerId} {
-      allow read: if request.auth != null && request.auth.uid == uid;
+      allow read: if signedIn() && request.auth.uid == uid;
 
-      allow create: if request.auth != null && request.auth.uid == uid
+      // Only written together with the prayer itself, so nobody can claim someone else's.
+      allow create: if signedIn() && request.auth.uid == uid
         && request.resource.data.keys().hasOnly(['createdAt', 'answered', 'seenReplies'])
         && request.resource.data.createdAt == request.time
         && request.resource.data.answered == false
-        && request.resource.data.seenReplies == 0;
+        && request.resource.data.seenReplies == 0
+        && !exists(/databases/$(database)/documents/prayers/$(prayerId))
+        && existsAfter(/databases/$(database)/documents/prayers/$(prayerId));
 
       // Two kinds of change: marking replies as read, or marking answered / waiting.
-      allow update: if request.auth != null && request.auth.uid == uid
+      allow update: if signedIn() && request.auth.uid == uid
         && (
           (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['seenReplies'])
             && request.resource.data.seenReplies is int
@@ -70,6 +115,22 @@ service cloud.firestore {
               .hasOnly(['answered', 'answeredAt', 'answerNote'])
             && validAnswerState(request.resource.data))
         );
+
+      allow delete: if signedIn() && request.auth.uid == uid;
+    }
+
+    // "My replies": one entry per reply they wrote, keyed "<prayerId>_<replyId>".
+    match /users/{uid}/replies/{key} {
+      allow read: if signedIn() && request.auth.uid == uid;
+
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['prayerId', 'replyId', 'createdAt'])
+        && request.resource.data.createdAt == request.time
+        && key == request.resource.data.prayerId + '_' + request.resource.data.replyId
+        && !exists(/databases/$(database)/documents/prayers/$(request.resource.data.prayerId)/replies/$(request.resource.data.replyId))
+        && existsAfter(/databases/$(database)/documents/prayers/$(request.resource.data.prayerId)/replies/$(request.resource.data.replyId));
+
+      allow delete: if signedIn() && request.auth.uid == uid;
     }
   }
 }
