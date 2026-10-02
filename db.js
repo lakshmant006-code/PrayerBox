@@ -56,29 +56,30 @@ var PrayerDB = (function () {
       });
     },
 
-    // Saves the prayer and, in the same write, a private link to it under the signed-in
-    // person's own account (users/{uid}/prayers). The public prayer carries no account id,
-    // so anonymous prayers stay anonymous; the link is what lets the owner find it again.
+    // Saves the prayer, then a private link to it under the signed-in person's own account
+    // (users/{uid}/prayers). The public prayer carries no account id, so anonymous prayers
+    // stay anonymous; the link is what lets the owner find it again on their dashboard.
+    // The link is saved second and on its own: if it can't be written (for example the
+    // database rules haven't been updated yet) the prayer is still posted.
     addPrayer: function (prayer) {
       if (!db) return unavailable();
       var user = firebase.auth().currentUser;
       var prayerRef = db.collection('prayers').doc();
-      var batch = db.batch();
-      var now = firebase.firestore.FieldValue.serverTimestamp();
-      batch.set(prayerRef, {
+      return prayerRef.set({
         name: prayer.name,
         request: prayer.request,
         visibility: prayer.visibility,
-        createdAt: now
-      });
-      if (user) {
-        batch.set(db.collection('users').doc(user.uid).collection('prayers').doc(prayerRef.id), {
-          createdAt: now,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(function () {
+        if (!user) return;
+        return db.collection('users').doc(user.uid).collection('prayers').doc(prayerRef.id).set({
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
           answered: false,
           seenReplies: 0
+        }).catch(function (err) {
+          console.error('Prayer posted, but could not add it to your My prayers list', err);
         });
-      }
-      return batch.commit();
+      });
     },
 
     // Calls onChange(items) with the signed-in person's own prayers, newest first, now and on
