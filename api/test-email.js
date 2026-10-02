@@ -1,4 +1,4 @@
-// POST /api/test-email   { "to": "someone@example.com", "kind": "reply" | "digest" }
+// POST /api/test-email   { "to": "someone@example.com", "kind": "reply" | "digest", "sandbox": true? }
 // Authorization: Bearer <CRON_SECRET>
 //
 // For the site owner: sends one sample email, so you can check that email is set up and see
@@ -49,8 +49,13 @@ module.exports = async function (req, res) {
         'whole family tonight.\n\nSee your prayers: ' + SITE + '/dashboard.html'
     };
 
+  // "sandbox": send from Resend's own test address, which works before your domain is
+  // verified, but only to the email address your Resend account is registered with.
+  const msg = message(to, 'test', email);
+  if (body.sandbox) msg.from = 'Prayer Box <onboarding@resend.dev>';
+
   try {
-    const sent = await sendOne(message(to, 'test', email));
+    const sent = await sendOne(msg);
     return res.status(200).json({ sent: true, id: sent.id });
   } catch (err) {
     console.error('test-email failed', err);
