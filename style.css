@@ -31,8 +31,24 @@
 }
 
 .drop-button {
+  position: relative;
+  display: inline-block;
+  isolation: isolate;
   border-radius: 12px;
   transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+/* Soft shadow: the same button drawn again behind it, 5px lower, with a layer blur */
+.drop-button::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: url("img/frame-9.png") center / 100% 100% no-repeat;
+  transform: translateY(5px);
+  filter: blur(10px);
+  opacity: 0.6;
+  pointer-events: none;
 }
 
 .drop-button:hover {
