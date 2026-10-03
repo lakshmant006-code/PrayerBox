@@ -47,7 +47,7 @@
   // ?login&next=dashboard.html sends the person there after signing in. Only our own
   // pages are accepted, so this can't be used to bounce someone to another site.
   var requestedNext = new URLSearchParams(location.search).get('next');
-  if (requestedNext === 'dashboard.html' || requestedNext === 'prayer.html') next = requestedNext;
+  if (['dashboard.html', 'prayer.html', 'admin.html'].indexOf(requestedNext) !== -1) next = requestedNext;
 
   function showError(message, field) {
     error.textContent = message;

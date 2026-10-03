@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta charset="utf-8" />
+<meta name="robots" content="noindex" />
+<title>Prayer Box · Admin</title>
+<script src="analytics.js"></script>
+<link rel="stylesheet" href="globals.css">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+<main class="adm">
+  <header class="adm-header">
+    <a href="/"><img class="adm-logo" src="img/title-1.png" alt="Prayer Box" width="191" height="61" /></a>
+    <h1 class="adm-title">Admin</h1>
+    <p class="adm-sub">Every prayer request in the box. Search, export, or email chosen prayers to everyone who turned on prayer emails.</p>
+    <nav class="adm-links">
+      <a href="/">&larr; Back to the box</a>
+      <a href="dashboard.html">My prayers</a>
+      <button type="button" id="log-out">Log out</button>
+    </nav>
+  </header>
+
+  <p class="adm-status" id="adm-status" role="status">Checking your account&hellip;</p>
+
+  <div id="adm-body" hidden>
+    <div class="adm-toolbar">
+      <input class="adm-search" id="adm-search" type="search" placeholder="Search prayers and names" aria-label="Search prayers and names" />
+      <select class="adm-filter" id="adm-filter" aria-label="Show">
+        <option value="all">All prayers</option>
+        <option value="public">Public</option>
+        <option value="anonymous">Anonymous</option>
+        <option value="replied">Has replies</option>
+        <option value="unreplied">No replies yet</option>
+      </select>
+      <button class="adm-btn" type="button" id="adm-export">Download spreadsheet (CSV)</button>
+    </div>
+
+    <p class="adm-count" id="adm-count" aria-live="polite"></p>
+
+    <div class="adm-table-wrap">
+      <table class="adm-table">
+        <thead>
+          <tr>
+            <th class="adm-col-check"><input type="checkbox" id="adm-select-all" aria-label="Select all shown" /></th>
+            <th>Date</th>
+            <th>From</th>
+            <th>Prayer request</th>
+            <th class="adm-col-num">Replies</th>
+          </tr>
+        </thead>
+        <tbody id="adm-rows"></tbody>
+      </table>
+    </div>
+
+    <section class="adm-compose" aria-labelledby="adm-compose-title">
+      <h2 class="adm-compose-title" id="adm-compose-title">Email the selected prayers</h2>
+      <p class="adm-compose-help" id="adm-recipients">Goes to everyone who turned on prayer emails.</p>
+      <label class="adm-label" for="adm-subject">Subject</label>
+      <input class="adm-input" id="adm-subject" type="text" maxlength="120" placeholder="Prayers to pray for this week" />
+      <label class="adm-label" for="adm-note">A short note at the top (optional)</label>
+      <textarea class="adm-input" id="adm-note" rows="3" maxlength="600" placeholder="Would you take a moment to pray for these requests?"></textarea>
+      <p class="adm-error" id="adm-error" role="alert" hidden></p>
+      <p class="adm-done" id="adm-done" role="status" hidden></p>
+      <div class="adm-actions">
+        <button class="adm-btn" type="button" id="adm-test">Send me a test</button>
+        <button class="adm-btn adm-btn-solid" type="button" id="adm-send">Email selected prayers</button>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="auth.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>

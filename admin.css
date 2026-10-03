@@ -1,0 +1,331 @@
+/* Admin page: same black-and-white look as the rest of Prayer Box. */
+.adm {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: max(28px, env(safe-area-inset-top)) 16px max(40px, env(safe-area-inset-bottom));
+  font-family: Georgia, "Times New Roman", serif;
+  color: #000;
+}
+
+.adm [hidden] {
+  display: none !important;
+}
+
+.adm-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  margin-bottom: 20px;
+}
+
+.adm-logo {
+  width: 120px;
+  height: auto;
+}
+
+.adm-title {
+  margin: 10px 0 0;
+  font-size: 30px;
+  font-weight: normal;
+}
+
+.adm-sub {
+  margin: 0;
+  max-width: 620px;
+  font-size: 15px;
+  color: #555;
+}
+
+.adm-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.adm-links a,
+.adm-links button,
+.adm-btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 6px 16px;
+  border: 1.5px solid #000;
+  border-radius: 999px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 15px;
+  color: #000;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.adm-links a:focus-visible,
+.adm-links button:focus-visible,
+.adm-btn:focus-visible,
+.adm-search:focus-visible,
+.adm-filter:focus-visible,
+.adm-input:focus-visible {
+  outline: 2px solid #000;
+  outline-offset: 2px;
+}
+
+.adm-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.adm-btn-solid {
+  background: #000;
+  color: #fff;
+}
+
+.adm-status {
+  margin: 32px 0;
+  font-size: 16px;
+  color: #444;
+}
+
+.adm-login {
+  color: #000;
+}
+
+/* Toolbar */
+.adm-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.adm-search,
+.adm-filter,
+.adm-input {
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1.5px solid #000;
+  border-radius: 10px;
+  background: #fff;
+  font: inherit;
+  font-size: 16px; /* keeps iPhone from zooming in */
+  color: #000;
+}
+
+.adm-search {
+  flex: 1 1 240px;
+}
+
+.adm-count {
+  margin: 12px 0 8px;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 13px;
+  color: #555;
+}
+
+/* Table */
+.adm-table-wrap {
+  border: 1.5px solid #000;
+  border-radius: 12px;
+  overflow: auto;
+  max-height: 60vh;
+}
+
+.adm-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+.adm-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 10px 12px;
+  background: #f5f5f2;
+  border-bottom: 1.5px solid #000;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.adm-table td {
+  padding: 12px;
+  border-bottom: 1px solid #e3e2dc;
+  vertical-align: top;
+}
+
+.adm-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.adm-col-check {
+  width: 36px;
+}
+
+.adm-col-check input,
+.adm-table th input {
+  width: 18px;
+  height: 18px;
+  accent-color: #000;
+}
+
+.adm-col-num {
+  width: 70px;
+  text-align: right;
+}
+
+.adm-date {
+  white-space: nowrap;
+  color: #555;
+}
+
+.adm-who {
+  min-width: 110px;
+}
+
+.adm-chip {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 8px;
+  border: 1px solid #000;
+  border-radius: 999px;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 11px;
+}
+
+.adm-request {
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.adm-edited {
+  color: #777;
+  font-size: 13px;
+}
+
+/* Compose */
+.adm-compose {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 24px;
+  padding: 20px;
+  border: 1.5px solid #000;
+  border-radius: 12px;
+}
+
+.adm-compose-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: normal;
+}
+
+.adm-compose-help {
+  margin: 0 0 6px;
+  font-size: 14px;
+  color: #555;
+}
+
+.adm-label {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 13px;
+  color: #333;
+}
+
+.adm-input {
+  width: 100%;
+  resize: vertical;
+}
+
+.adm-error {
+  margin: 4px 0 0;
+  color: #b3261e;
+  font-size: 14px;
+}
+
+.adm-done {
+  margin: 4px 0 0;
+  color: #1d6b33;
+  font-size: 14px;
+}
+
+.adm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+@media (pointer: coarse) {
+  .adm-btn,
+  .adm-links a,
+  .adm-links button {
+    min-height: 44px;
+  }
+}
+
+/* Phones: each prayer becomes a card instead of a table row */
+@media (max-width: 680px) {
+  .adm-table-wrap {
+    max-height: none;
+    border: 0;
+    border-radius: 0;
+    overflow: visible;
+  }
+
+  .adm-table thead {
+    display: none;
+  }
+
+  .adm-table,
+  .adm-table tbody,
+  .adm-table tr,
+  .adm-table td {
+    display: block;
+    width: auto;
+  }
+
+  .adm-table tr {
+    position: relative;
+    margin-bottom: 10px;
+    padding: 12px 14px 12px 48px;
+    border: 1.5px solid #000;
+    border-radius: 12px;
+  }
+
+  .adm-table tr[hidden] {
+    display: none;
+  }
+
+  .adm-table td {
+    padding: 2px 0;
+    border: 0;
+    text-align: left;
+  }
+
+  .adm-table .adm-col-check {
+    position: absolute;
+    top: 12px;
+    left: 14px;
+  }
+
+  .adm-table .adm-col-num::before {
+    content: "Replies: ";
+    color: #555;
+  }
+
+  .adm-date {
+    font-size: 13px;
+  }
+
+  .adm-actions .adm-btn {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+}

@@ -36,6 +36,30 @@ function firebase() {
   return admin;
 }
 
+// ---- Signed values -------------------------------------------------------------------------
+// HMAC-signs a value for one purpose, so a link can't be forged or reused for something else.
+function sign(purpose, value) {
+  const secret = process.env.UNSUBSCRIBE_SECRET;
+  if (!secret) throw new Error('UNSUBSCRIBE_SECRET is not set');
+  return crypto.createHmac('sha256', secret).update(purpose + ':' + value).digest('hex').slice(0, 40);
+}
+
+function validSignature(purpose, value, signature) {
+  if (typeof value !== 'string' || typeof signature !== 'string' || signature.length !== 40) return false;
+  const expected = Buffer.from(sign(purpose, value));
+  const given = Buffer.from(signature);
+  return expected.length === given.length && crypto.timingSafeEqual(expected, given);
+}
+
+// ---- Who's an admin --------------------------------------------------------------------
+// ADMIN_EMAILS (Vercel env): comma-separated emails allowed to use the admin page.
+// The sign-in must have a verified email (Google sign-ins always do).
+function isAdmin(decodedToken) {
+  const list = (process.env.ADMIN_EMAILS || '').toLowerCase().split(',').map(function (e) { return e.trim(); }).filter(Boolean);
+  const email = (decodedToken && decodedToken.email || '').toLowerCase();
+  return !!email && decodedToken.email_verified === true && list.indexOf(email) !== -1;
+}
+
 // ---- Unsubscribe links -------------------------------------------------------------------
 
 function unsubscribeToken(uid) {
@@ -101,22 +125,33 @@ function layout(email, uid) {
     // The message itself (a reply, or the list of prayers)
     (email.bodyHtml ? '<tr><td style="padding:0 0 28px;">' + email.bodyHtml + '</td></tr>' : '') +
 
-    // Button
-    '<tr><td align="center" style="padding:0 0 40px;">' +
-    '<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>' +
-    '<td align="center" bgcolor="#111111" style="border-radius:10px;">' +
-    '<a href="' + email.buttonHref + '" style="display:inline-block;padding:15px 38px;font-family:' + SANS +
-    ';font-size:18px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:10px;">' +
-    escapeHtml(email.buttonLabel) + '</a></td></tr></table></td></tr>' +
+    // Buttons: the first is solid black, any others are outlined, stacked below it.
+    buttons(email) +
 
     // Footer
     '<tr><td align="center" style="padding:0 16px;font-family:' + SANS + ';font-size:13px;line-height:1.6;color:#8a8a8a;">' +
-    'You\u2019re getting this because you turned on email updates at Prayer Box.<br>' +
-    '<a href="' + SITE + '/dashboard.html" style="color:#8a8a8a;">Email settings</a>' +
-    ' &nbsp;·&nbsp; <a href="' + unsubscribeUrl(uid) + '" style="color:#8a8a8a;">Unsubscribe</a>' +
+    (email.footer
+      ? escapeHtml(email.footer)
+      : 'You\u2019re getting this because you turned on email updates at Prayer Box.<br>' +
+        '<a href="' + SITE + '/dashboard.html" style="color:#8a8a8a;">Email settings</a>' +
+        ' &nbsp;·&nbsp; <a href="' + unsubscribeUrl(uid) + '" style="color:#8a8a8a;">Unsubscribe</a>') +
     '</td></tr>' +
 
     '</table></td></tr></table></body></html>';
+}
+
+function buttons(email) {
+  const list = email.buttons || [{ href: email.buttonHref, label: email.buttonLabel }];
+  return list.map(function (b, i) {
+    const solid = i === 0;
+    return '<tr><td align="center" style="padding:0 0 ' + (i === list.length - 1 ? 40 : 12) + 'px;">' +
+      '<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>' +
+      '<td align="center" bgcolor="' + (solid ? '#111111' : '#ffffff') + '" style="border-radius:10px;' +
+      (solid ? '' : 'border:1.5px solid #111111;') + '">' +
+      '<a href="' + b.href + '" style="display:inline-block;padding:15px 38px;font-family:' + SANS +
+      ';font-size:18px;font-weight:700;color:' + (solid ? '#ffffff' : '#111111') +
+      ';text-decoration:none;border-radius:10px;">' + escapeHtml(b.label) + '</a></td></tr></table></td></tr>';
+  }).join('');
 }
 
 // A soft grey card holding someone's words (a reply, or a prayer request).
@@ -132,6 +167,19 @@ function words(text) {
 
 function byline(text) {
   return '<div style="margin:0 0 6px;font-family:' + SANS + ';font-size:13px;color:#777777;">' + escapeHtml(text) + '</div>';
+}
+
+// An email that isn't a subscription (e.g. a reply to an email someone sent us): no
+// unsubscribe link, just a plain footer line.
+// email: { subject, heading, intro, preview?, bodyHtml, buttons: [{href, label}], footer, text }
+function notice(to, email) {
+  return {
+    from: process.env.EMAIL_FROM,
+    to: [to],
+    subject: email.subject,
+    html: layout(email, null),
+    text: email.text
+  };
 }
 
 // One email object for Resend; `headers` adds one-click unsubscribe for mail apps.
@@ -164,6 +212,14 @@ async function resend(path, payload) {
   return res.json();
 }
 
+async function resendGet(path) {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) throw new Error('RESEND_API_KEY is not set');
+  const res = await fetch('https://api.resend.com' + path, { headers: { Authorization: 'Bearer ' + key } });
+  if (!res.ok) throw new Error('Resend ' + res.status + ': ' + (await res.text()));
+  return res.json();
+}
+
 function sendOne(msg) {
   return resend('/emails', msg);
 }
@@ -176,6 +232,6 @@ async function sendMany(msgs) {
 }
 
 module.exports = {
-  SITE, firebase, escapeHtml, card, words, byline, message, sendOne, sendMany,
-  unsubscribeUrl, validUnsubscribeToken
+  SITE, firebase, escapeHtml, card, words, byline, message, notice, sendOne, sendMany, resendGet,
+  unsubscribeUrl, validUnsubscribeToken, sign, validSignature, isAdmin
 };
