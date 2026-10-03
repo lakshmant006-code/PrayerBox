@@ -1,6 +1,8 @@
 .login {
   width: min(480px, calc(100vw - 32px));
   max-height: calc(100vh - 32px);
+  max-height: calc(100dvh - 24px);
+  overscroll-behavior: contain;
   padding: 0;
   border: 0;
   border-radius: 24px;
@@ -254,6 +256,23 @@
 }
 
 @media (pointer: coarse) {
+  .corner-pill {
+    min-height: 44px;
+  }
+}
+
+/* Phones: 48px buttons, and the corner pills are easy to tap too */
+@media (max-width: 600px) {
+  .login-actions .login-btn {
+    min-height: 48px;
+  }
+
+  .login-close {
+    margin-right: -10px;
+  }
+}
+
+@media (max-width: 900px), (max-height: 500px), (pointer: coarse) {
   .corner-pill {
     min-height: 44px;
   }

@@ -11,6 +11,12 @@ body {
   height: 100%;
 }
 
+/* iPhone: don't let Safari enlarge text by itself when the phone is turned sideways. */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   background: #ffffff;
   color: #000000;
@@ -32,4 +38,16 @@ button {
   border: 0;
   padding: 0;
   cursor: pointer;
+}
+
+/* Taps respond straight away (no double-tap-to-zoom wait) and without the grey flash. */
+a,
+button,
+input,
+select,
+textarea,
+summary,
+label {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }

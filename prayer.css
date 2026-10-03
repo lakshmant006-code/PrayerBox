@@ -1,5 +1,6 @@
 .prayer-request-form {
   min-height: 100vh;
+  min-height: 100svh;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -212,18 +213,30 @@
 
 .page-links {
   display: flex;
-  gap: 24px;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
   margin: 0;
 }
 
+/* Back / My prayers / Log out: pill buttons, at least 44px tall to tap */
 .back-link {
-  color: #000;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 6px 16px;
+  border: 1.5px solid #000;
+  border-radius: 999px;
+  background: #fff;
+  font-family: inherit;
   font-size: 15px;
+  color: #000;
+  text-decoration: none;
 }
 
-.log-out {
-  font-family: inherit;
-  text-decoration: underline;
+.back-link:focus-visible {
+  outline: 2px solid #000;
+  outline-offset: 2px;
 }
 
 @media (max-width: 420px) {
@@ -246,5 +259,16 @@
   .toggle-track .icon {
     width: 14px;
     height: 14px;
+  }
+}
+
+/* Phones: room at the bottom for the home bar, and a big submit button */
+@media (max-width: 600px) {
+  .prayer-request-form {
+    padding-bottom: max(32px, env(safe-area-inset-bottom));
+  }
+
+  .submit-button {
+    min-height: 52px;
   }
 }

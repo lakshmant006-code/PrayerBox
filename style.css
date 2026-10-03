@@ -1,5 +1,6 @@
 .desktop {
   min-height: 100vh;
+  min-height: 100svh; /* iPhone: the height you can see with Safari's bars showing */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -38,6 +39,13 @@
   transition: transform 0.15s ease, opacity 0.15s ease;
 }
 
+/* A taller invisible tap area (at least 44px) without changing how the button looks */
+.drop-button::after {
+  content: "";
+  position: absolute;
+  inset: -6px -4px;
+}
+
 /* Soft shadow: the same button drawn again behind it, 5px lower, with a layer blur */
 .drop-button::before {
   content: "";
@@ -74,5 +82,12 @@
 @media (max-width: 600px) {
   .frame .img {
     width: 160px;
+  }
+}
+
+/* Phones: start the title below the "My prayers" / "Log out" pills in the corner */
+@media (max-width: 600px) {
+  .desktop {
+    padding-top: max(68px, calc(env(safe-area-inset-top) + 60px));
   }
 }

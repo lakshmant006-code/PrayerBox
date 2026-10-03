@@ -329,3 +329,15 @@
     justify-content: center;
   }
 }
+
+@media (max-width: 900px), (pointer: coarse) {
+  .adm-filter,
+  .adm-search {
+    min-height: 44px;
+  }
+
+  .adm-header > a {
+    display: inline-block;
+    padding: 4px 0;
+  }
+}

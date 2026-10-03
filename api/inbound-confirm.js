@@ -15,10 +15,11 @@ function page(res, status, title, bodyHtml) {
     '<style>' +
     'body{margin:0;padding:40px 16px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;color:#111;text-align:center;background:#fff}' +
     '.wrap{max-width:460px;margin:0 auto}' +
+    'html{-webkit-text-size-adjust:100%}a,button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}' +
     '.logo{width:150px;height:auto}.letter{width:80px;height:auto;margin:28px 0 22px}' +
     'h1{font-size:28px;margin:0 0 12px}p{font-size:17px;line-height:1.5;color:#333;margin:0 0 22px}' +
     '.card{text-align:left;padding:18px 20px;background:#f5f5f2;border-radius:12px;font-family:Georgia,serif;font-size:17px;line-height:1.55;white-space:pre-wrap;margin:0 0 26px}' +
-    'form{margin:0 0 12px}button,.btn{display:block;width:100%;box-sizing:border-box;padding:15px 20px;border-radius:10px;font:700 17px/1.2 inherit;cursor:pointer;text-decoration:none}' +
+    'form{margin:0 0 12px}button,.btn{display:block;width:100%;box-sizing:border-box;min-height:52px;padding:15px 20px;border-radius:10px;font:700 17px/1.2 inherit;cursor:pointer;text-decoration:none}' +
     '.solid{background:#111;color:#fff;border:1.5px solid #111}.outline{background:#fff;color:#111;border:1.5px solid #111}' +
     '</style></head><body><div class="wrap">' +
     '<a href="' + SITE + '/"><img class="logo" src="' + SITE + '/img/title-1.png" alt="Prayer Box"></a><br>' +
